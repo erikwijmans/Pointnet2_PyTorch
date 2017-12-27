@@ -142,7 +142,7 @@ class PointnetSAModule(nn.Module):
             new_xyz = pointnet2_utils.gather_points(
                 xyz, pointnet2_utils.furthest_point_sample(xyz, self.npoint))
         else:
-            new_xyz = xyz.new([[[0, 0, 0]]]).expand(xyz.size(0), 1, 3)
+            new_xyz = xyz.data.new([[[0, 0, 0]]]).expand(xyz.size(0), 1, 3)
 
         new_points = self.grouper(xyz, new_xyz,
                                   points)  # (B, npoint, nsample, 3 + C)

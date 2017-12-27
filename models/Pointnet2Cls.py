@@ -1,96 +1,133 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-
 import os, sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
-sys.path.append(os.path.join(BASE_DIR, "..", "utils"))
+sys.path.append(os.path.join(BASE_DIR, "../utils"))
 
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
 import pytorch_utils as pt_utils
-from TransformNets import TransformNet, TranslationNet
+from pointnet2_modules import PointnetSAModule, PointnetFPModule, PointnetSAModuleMSG
+from pointnet2_utils import RandomDropout
+from collections import namedtuple
 
 
 def model_fn_decorator(criterion):
-    transform_reg = 1e-3
+    ModelReturn = namedtuple("ModelReturn", ['preds', 'loss', 'acc'])
 
-    def ortho_loss(matrix):
-        return torch.dist(
-            matrix.bmm(matrix.transpose(1, 2)),
-            Variable(
-                torch.eye(matrix.size(1), matrix.size(2)).type(
-                    torch.cuda.FloatTensor)))
+    def model_fn(model, data, epoch=0, eval=False):
+        inputs, labels = data
+        inputs = Variable(inputs.cuda(async=True), volatile=eval)
+        labels = Variable(labels.cuda(async=True), volatile=eval)
 
-    def wrapped(model, inputs, labels):
-        labels = labels.squeeze()
-        preds, end_points = model(inputs)
+        xyz = inputs[..., :3]
+        if inputs.size(2) > 3:
+            points = inputs[..., 3:]
+        else:
+            points = None
 
-        transform_loss = 0.0
-        for _, T in end_points.items():
-            transform_loss += ortho_loss(T)
+        preds = model(xyz, points)
+        labels = labels.view(-1)
+        loss = criterion(preds, labels)
 
-        preds_loss = criterion(preds, labels)
-        loss = preds_loss + transform_reg * transform_loss
+        _, classes = torch.max(preds.data, -1)
+        acc = (classes == labels.data).sum() / labels.numel()
 
-        _, classes = torch.max(preds, 1)
-        acc = (classes == labels).sum()
+        return ModelReturn(preds, loss, {"acc": acc})
 
-        return preds, loss, acc.data[0]
-
-    return wrapped
+    return model_fn
 
 
-class PointnetCls(nn.Module):
-    def __init__(self):
+class Pointnet2SSG(nn.Module):
+    def __init__(self, num_classes, input_channels=9):
         super().__init__()
 
-        self.translation_net = TranslationNet()
-        self.t_net = TransformNet(1, 3, 3, scale=False)
-        self.f_net = TransformNet(64, 1, 64, scale=False)
+        self.SA_modules = nn.ModuleList()
+        self.SA_modules.append(
+            PointnetSAModule(
+                npoint=512,
+                radius=0.2,
+                nsample=64,
+                mlp=[input_channels, 64, 64, 128]))
+        self.SA_modules.append(
+            PointnetSAModule(
+                npoint=128,
+                radius=0.4,
+                nsample=64,
+                mlp=[128 + 3, 128, 128, 256]))
+        self.SA_modules.append(PointnetSAModule(mlp=[256 + 3, 256, 512, 1024]))
 
-        self.input_mlp = nn.Sequential(
-            pt_utils.Conv2d(1, 64, [1, 3], bn=True),
-            pt_utils.Conv2d(64, 64, bn=True))
-
-        self.second_mlp = pt_utils.SharedMLP([64, 64, 128, 1024], bn=True)
-
-        self.final_mlp = nn.Sequential(
+        self.FC_layer = nn.Sequential(
             pt_utils.FC(1024, 512, bn=True),
+            nn.Dropout(p=0.5),
             pt_utils.FC(512, 256, bn=True),
-            nn.Dropout(0.3), pt_utils.FC(256, 40, activation=None))
+            nn.Dropout(p=0.5),
+            pt_utils.FC(256, num_classes, activation=None))
 
-    def forward(self, points: torch.Tensor):
-        batch_size, n_points, _ = points.size()
-        end_points = {}
+    def forward(self, xyz, points=None):
+        for module in self.SA_modules:
+            xyz, points = module(xyz, points)
 
-        points = points + self.translation_net(points).unsqueeze(1)
-        points, transform = self.apply_transform(
-            points, *self.t_net(points.unsqueeze(1)))
-
-        points = self.input_mlp(points.unsqueeze(1))
-
-        points, transform = self.apply_transform(points.squeeze().transpose(
-            1, 2), *self.f_net(points))
-        end_points['trans2'] = transform
-
-        points = F.max_pool2d(
-            self.second_mlp(points.transpose(1, 2).unsqueeze(-1)),
-            kernel_size=[n_points, 1])
-        return self.final_mlp(points.view(-1, 1024)), end_points
+        return self.FC_layer(points.squeeze(1))
 
 
-    def apply_transform(self, points, rotation, scale=None):
-        points = points @ rotation
-        if scale is not None:
-            points = points * scale.contiguous().view(-1, 1, 1).repeat(
-                1, points.size(1), points.size(2))
+class Pointnet2MSG(nn.Module):
+    def __init__(self, num_classes, input_channels=9):
+        super().__init__()
 
-        return points, rotation
+        self.SA_modules = nn.ModuleList()
+        self.SA_modules.append(
+            PointnetSAModuleMSG(
+                npoint=512,
+                radii=[0.1, 0.2, 0.4],
+                nsamples=[32, 64, 128],
+                mlps=[[input_channels, 32, 32,
+                       64], [input_channels, 64, 64, 128],
+                      [input_channels, 64, 96, 128]]))
+
+        input_channels = 64 + 128 + 128 + 3
+        self.SA_modules.append(
+            PointnetSAModuleMSG(
+                npoint=128,
+                radii=[0.2, 0.4, 0.8],
+                nsamples=[16, 32, 64],
+                mlps=[[input_channels, 64, 64,
+                      128], [input_channels, 128, 128, 256],
+                     [input_channels, 128, 128, 256]]))
+        self.SA_modules.append(
+            PointnetSAModule(mlp=[128 + 256 + 256 + 3, 256, 512, 1024]))
+
+        self.FC_layer = nn.Sequential(
+            pt_utils.FC(1024, 512, bn=True),
+            nn.Dropout(p=0.5),
+            pt_utils.FC(512, 256, bn=True),
+            nn.Dropout(p=0.5),
+            pt_utils.FC(256, num_classes, activation=None))
+
+    def forward(self, xyz, points=None):
+        for module in self.SA_modules:
+            xyz, points = module(xyz, points)
+
+        return self.FC_layer(points.squeeze(1))
 
 
 if __name__ == "__main__":
     from torch.autograd import Variable
-    model = PointnetCls()
-    data = Variable(torch.randn(2, 10, 3))
-    print(model(data))
+    import numpy as np
+    import torch.optim as optim
+    B = 2
+    N = 32
+    inputs = torch.randn(B, N, 9).cuda()
+    labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
+    model = Pointnet2SSG(3)
+    model.cuda()
+
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+
+    model_fn = model_fn_decorator(nn.CrossEntropyLoss())
+    for _ in range(20):
+        optimizer.zero_grad()
+        _, loss, _ = model_fn(model, (inputs, labels))
+        loss.backward()
+        print(loss.data[0])
+        optimizer.step()

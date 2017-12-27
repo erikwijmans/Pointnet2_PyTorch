@@ -16,7 +16,8 @@ ffi = create_extension(
     relative_to=__file__,
     with_cuda=True,
     extra_objects=extra_objects,
-    include_dirs=[path.join(base_dir, 'cinclude')])
+    include_dirs=[path.join(base_dir, 'cinclude')],
+    verbose=False)
 
 if __name__ == "__main__":
     assert torch.cuda.is_available(), "Needs CUDA!"

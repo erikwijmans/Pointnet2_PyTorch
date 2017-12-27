@@ -16,7 +16,7 @@ class PointcloudScale(object):
 class PointcloudRotate(object):
     def __init__(self, x_axis=False, z_axis=True):
         assert x_axis or z_axis
-        self.x, self.y = x_axis, z_axis
+        self.x, self.z = x_axis, z_axis
 
     def _get_angles(self):
         rotation_angle = np.random.uniform() * 2 * np.pi

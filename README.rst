@@ -1,4 +1,3 @@
-=================
 Pointnet2 PyTorch
 =================
 
@@ -6,15 +5,12 @@ Partial implemention of `Pointnet2 <https://github.com/charlesq34/pointnet2>`_ w
 
 The custom ops used by Pointnet2 are currently **ONLY** supported on the GPU using CUDA.
 
----------------------
 Building CUDA kernels
 ---------------------
 
-- ``cd utils``
 - ``mkdir build && cd build``
 - ``cmake .. && make``
 
-------------------
 Exampling training
 ------------------
 

@@ -39,6 +39,7 @@ def model_fn_decorator(criterion):
 
 
 class Pointnet2SSG(nn.Module):
+
     def __init__(self, num_classes, input_channels=9):
         super().__init__()
 
@@ -48,13 +49,17 @@ class Pointnet2SSG(nn.Module):
                 npoint=512,
                 radius=0.2,
                 nsample=64,
-                mlp=[input_channels, 64, 64, 128]))
+                mlp=[input_channels, 64, 64, 128]
+            )
+        )
         self.SA_modules.append(
             PointnetSAModule(
                 npoint=128,
                 radius=0.4,
                 nsample=64,
-                mlp=[128 + 3, 128, 128, 256]))
+                mlp=[128 + 3, 128, 128, 256]
+            )
+        )
         self.SA_modules.append(PointnetSAModule(mlp=[256 + 3, 256, 512, 1024]))
 
         self.FC_layer = nn.Sequential(
@@ -62,7 +67,8 @@ class Pointnet2SSG(nn.Module):
             nn.Dropout(p=0.5),
             pt_utils.FC(512, 256, bn=True),
             nn.Dropout(p=0.5),
-            pt_utils.FC(256, num_classes, activation=None))
+            pt_utils.FC(256, num_classes, activation=None)
+        )
 
     def forward(self, xyz, points=None):
         for module in self.SA_modules:
@@ -72,6 +78,7 @@ class Pointnet2SSG(nn.Module):
 
 
 class Pointnet2MSG(nn.Module):
+
     def __init__(self, num_classes, input_channels=9):
         super().__init__()
 
@@ -83,7 +90,9 @@ class Pointnet2MSG(nn.Module):
                 nsamples=[32, 64, 128],
                 mlps=[[input_channels, 32, 32,
                        64], [input_channels, 64, 64, 128],
-                      [input_channels, 64, 96, 128]]))
+                      [input_channels, 64, 96, 128]]
+            )
+        )
 
         input_channels = 64 + 128 + 128 + 3
         self.SA_modules.append(
@@ -92,17 +101,21 @@ class Pointnet2MSG(nn.Module):
                 radii=[0.2, 0.4, 0.8],
                 nsamples=[16, 32, 64],
                 mlps=[[input_channels, 64, 64,
-                      128], [input_channels, 128, 128, 256],
-                     [input_channels, 128, 128, 256]]))
+                       128], [input_channels, 128, 128, 256],
+                      [input_channels, 128, 128, 256]]
+            )
+        )
         self.SA_modules.append(
-            PointnetSAModule(mlp=[128 + 256 + 256 + 3, 256, 512, 1024]))
+            PointnetSAModule(mlp=[128 + 256 + 256 + 3, 256, 512, 1024])
+        )
 
         self.FC_layer = nn.Sequential(
             pt_utils.FC(1024, 512, bn=True),
             nn.Dropout(p=0.5),
             pt_utils.FC(512, 256, bn=True),
             nn.Dropout(p=0.5),
-            pt_utils.FC(256, num_classes, activation=None))
+            pt_utils.FC(256, num_classes, activation=None)
+        )
 
     def forward(self, xyz, points=None):
         for module in self.SA_modules:

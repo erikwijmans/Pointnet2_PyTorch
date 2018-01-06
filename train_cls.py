@@ -16,55 +16,61 @@ import utils.pytorch_utils as pt_utils
 import utils.data_utils as d_utils
 import argparse
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Arguments for cls training",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "-batch_size", type=int, default=16, help="Batch size")
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument("-batch_size", type=int, default=16, help="Batch size")
     parser.add_argument(
         "-num_points",
         type=int,
         default=1024,
-        help="Number of points to train with")
+        help="Number of points to train with"
+    )
     parser.add_argument(
-        "-weight_decay", type=float, default=1e-5, help="L2 regularization coeff")
-    parser.add_argument(
-        "-lr",
+        "-weight_decay",
         type=float,
-        default=1e-2,
-        help="Initial learning rate")
+        default=1e-5,
+        help="L2 regularization coeff"
+    )
     parser.add_argument(
-        "-lr_decay",
-        type=float,
-        default=0.7,
-        help="Learning rate decay gamma")
+        "-lr", type=float, default=1e-2, help="Initial learning rate"
+    )
     parser.add_argument(
-        "-decay_step",
-        type=int,
-        default=20,
-        help="Learning rate decay step")
+        "-lr_decay", type=float, default=0.7, help="Learning rate decay gamma"
+    )
+    parser.add_argument(
+        "-decay_step", type=int, default=20, help="Learning rate decay step"
+    )
     parser.add_argument(
         "-bn_momentum",
         type=float,
         default=0.5,
-        help="Initial batch norm momentum")
+        help="Initial batch norm momentum"
+    )
     parser.add_argument(
         "-bnm_decay",
         type=float,
         default=0.5,
-        help="Batch norm momentum decay gamma")
+        help="Batch norm momentum decay gamma"
+    )
     parser.add_argument(
-        "-checkpoint", type=str, default=None, help="Checkpoint to start from")
+        "-checkpoint", type=str, default=None, help="Checkpoint to start from"
+    )
     parser.add_argument(
-        "-epochs", type=int, default=200, help="Number of epochs to train for")
+        "-epochs", type=int, default=200, help="Number of epochs to train for"
+    )
     parser.add_argument(
         "-run_name",
         type=str,
         default="cls_run_1",
-        help="Name for run in tensorboard_logger")
+        help="Name for run in tensorboard_logger"
+    )
 
     return parser.parse_args()
+
 
 lr_clip = 1e-5
 bnm_clip = 1e-2
@@ -82,13 +88,15 @@ if __name__ == "__main__":
     ])
 
     test_set = ModelNet40Cls(
-        args.num_points, BASE_DIR, transforms=transforms, train=False)
+        args.num_points, BASE_DIR, transforms=transforms, train=False
+    )
     test_loader = DataLoader(
         test_set,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=2,
-        pin_memory=True)
+        pin_memory=True
+    )
 
     train_set = ModelNet40Cls(args.num_points, BASE_DIR, transforms=transforms)
     train_loader = DataLoader(
@@ -96,25 +104,30 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=2,
-        pin_memory=True)
+        pin_memory=True
+    )
 
     tb_log.configure('runs/{}'.format(args.run_name))
 
     model = Pointnet(input_channels=3, num_classes=40)
     model.cuda()
     optimizer = optim.Adam(
-        model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+    )
     lr_lbmd = lambda e: max(args.lr_decay**(e // args.decay_step), lr_clip / args.lr)
     bn_lbmd = lambda e: max(args.bn_momentum * args.bnm_decay**(e // args.decay_step), bnm_clip)
 
     if args.checkpoint is not None:
         start_epoch, best_loss = pt_utils.load_checkpoint(
-            model, optimizer, filename=args.checkpoint.split(".")[0])
+            model, optimizer, filename=args.checkpoint.split(".")[0]
+        )
 
         lr_scheduler = lr_sched.LambdaLR(
-            optimizer, lr_lambda=lr_lbmd, last_epoch=start_epoch)
+            optimizer, lr_lambda=lr_lbmd, last_epoch=start_epoch
+        )
         bnm_scheduler = pt_utils.BNMomentumScheduler(
-            model, bn_lambda=bn_lbmd, last_epoch=start_epoch)
+            model, bn_lambda=bn_lbmd, last_epoch=start_epoch
+        )
     else:
         lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lambda=lr_lbmd)
         bnm_scheduler = pt_utils.BNMomentumScheduler(model, bn_lambda=bn_lbmd)
@@ -131,14 +144,16 @@ if __name__ == "__main__":
         checkpoint_name="cls_checkpoint",
         best_name="cls_best",
         lr_scheduler=lr_scheduler,
-        bnm_scheduler=bnm_scheduler)
+        bnm_scheduler=bnm_scheduler
+    )
 
     trainer.train(
         start_epoch,
         args.epochs,
         train_loader,
         test_loader,
-        best_loss=best_loss)
+        best_loss=best_loss
+    )
 
     if start_epoch == args.epochs:
         _ = trainer.eval_epoch(start_epoch, test_loader)

@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "interpolate_gpu.h"
 #include "cuda_utils.h"
+#include "interpolate_gpu.h"
 
 // input: unknown(b, n, 3) known(b, m, 3)
 // output: dist2(b, n, 3), idx(b, n, 3)

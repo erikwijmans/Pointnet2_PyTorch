@@ -24,13 +24,15 @@ class PointnetSAModuleMSG(nn.Module):
         Use batchnorm
     """
 
-    def __init__(self,
-                 *,
-                 npoint: int,
-                 radii: List[float],
-                 nsamples: List[int],
-                 mlps: List[List[int]],
-                 bn: bool = True):
+    def __init__(
+            self,
+            *,
+            npoint: int,
+            radii: List[float],
+            nsamples: List[int],
+            mlps: List[List[int]],
+            bn: bool = True
+    ):
         super().__init__()
 
         assert len(radii) == len(nsamples) == len(mlps)
@@ -41,8 +43,7 @@ class PointnetSAModuleMSG(nn.Module):
         for i in range(len(radii)):
             radius = radii[i]
             nsample = nsamples[i]
-            self.groupers.append(
-                pointnet2_utils.QueryAndGroup(radius, nsample))
+            self.groupers.append(pointnet2_utils.QueryAndGroup(radius, nsample))
             mlp_spec = mlps[i]
             self.mlps.append(pt_utils.SharedMLP(mlp_spec, bn=bn))
 
@@ -66,18 +67,20 @@ class PointnetSAModuleMSG(nn.Module):
 
         new_points_list = []
         new_xyz = pointnet2_utils.gather_points(
-            xyz, pointnet2_utils.furthest_point_sample(xyz, self.npoint))
+            xyz, pointnet2_utils.furthest_point_sample(xyz, self.npoint)
+        )
         for i in range(len(self.groupers)):
             new_points = self.groupers[i](xyz, new_xyz, points)
 
-            new_points = self.mlps[i](new_points.permute(
-                0, 3, 1, 2))  # (B, mlp[-1], npoint, nsample)
+            new_points = self.mlps[i](new_points.permute(0, 3, 1, 2)
+                                     )  # (B, mlp[-1], npoint, nsample)
             new_points = F.max_pool2d(
-                new_points,
-                kernel_size=[1, new_points.size(3)])  # (B, mlp[-1], npoint, 1)
+                new_points, kernel_size=[1, new_points.size(3)]
+            )  # (B, mlp[-1], npoint, 1)
             new_points = new_points.squeeze(-1)  # (B, mlp[-1], npoint)
             new_points = new_points.transpose(
-                1, 2).contiguous()  # (B, npoint, mlp[-1])
+                1, 2
+            ).contiguous()  # (B, npoint, mlp[-1])
 
             new_points_list.append(new_points)
 
@@ -101,13 +104,15 @@ class PointnetSAModule(nn.Module):
         Use batchnorm
     """
 
-    def __init__(self,
-                 *,
-                 mlp: List[int],
-                 npoint: int = None,
-                 radius: float = None,
-                 nsample: int = None,
-                 bn: bool = True):
+    def __init__(
+            self,
+            *,
+            mlp: List[int],
+            npoint: int = None,
+            radius: float = None,
+            nsample: int = None,
+            bn: bool = True
+    ):
         super().__init__()
         self.npoint = npoint
 
@@ -140,21 +145,23 @@ class PointnetSAModule(nn.Module):
 
         if self.npoint is not None:
             new_xyz = pointnet2_utils.gather_points(
-                xyz, pointnet2_utils.furthest_point_sample(xyz, self.npoint))
+                xyz, pointnet2_utils.furthest_point_sample(xyz, self.npoint)
+            )
         else:
             new_xyz = xyz.data.new([[[0, 0, 0]]]).expand(xyz.size(0), 1, 3)
 
-        new_points = self.grouper(xyz, new_xyz,
-                                  points)  # (B, npoint, nsample, 3 + C)
+        new_points = self.grouper(
+            xyz, new_xyz, points
+        )  # (B, npoint, nsample, 3 + C)
 
-        new_points = self.mlp(new_points.permute(
-            0, 3, 1, 2))  # (B, mlp[-1], npoint, nsample)
+        new_points = self.mlp(new_points.permute(0, 3, 1, 2)
+                             )  # (B, mlp[-1], npoint, nsample)
         new_points = F.max_pool2d(
-            new_points,
-            kernel_size=[1, new_points.size(3)])  # (B, mlp[-1], npoint, 1)
+            new_points, kernel_size=[1, new_points.size(3)]
+        )  # (B, mlp[-1], npoint, 1)
         new_points = new_points.squeeze(-1)  # (B, mlp[-1], npoint)
-        new_points = new_points.transpose(
-            1, 2).contiguous()  # (B, npoint, mlp[-1])
+        new_points = new_points.transpose(1, 2
+                                         ).contiguous()  # (B, npoint, mlp[-1])
 
         return new_xyz, new_points
 
@@ -174,9 +181,10 @@ class PointnetFPModule(nn.Module):
         super().__init__()
         self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
 
-    def forward(self, unknown: torch.Tensor, known: torch.Tensor,
-                unknow_feats: torch.Tensor,
-                known_feats: torch.Tensor) -> torch.Tensor:
+    def forward(
+            self, unknown: torch.Tensor, known: torch.Tensor,
+            unknow_feats: torch.Tensor, known_feats: torch.Tensor
+    ) -> torch.Tensor:
         r"""
         Parameters
         ----------
@@ -201,19 +209,21 @@ class PointnetFPModule(nn.Module):
         weight = dist_recip / norm
 
         interpolated_feats = pointnet2_utils.three_interpolate(
-            known_feats, idx, weight)
+            known_feats, idx, weight
+        )
         if unknow_feats is not None:
-            new_points = torch.cat(
-                [interpolated_feats, unknow_feats], dim=-1)  #(B, n, C2 + C1)
+            new_points = torch.cat([interpolated_feats, unknow_feats],
+                                   dim=-1)  #(B, n, C2 + C1)
         else:
             new_points = interpolated_feats
 
-        new_points = new_points.unsqueeze(-1).transpose(1,
-                                                        2)  #(B, C2 + C1, n, 1)
+        new_points = new_points.unsqueeze(-1).transpose(
+            1, 2
+        )  #(B, C2 + C1, n, 1)
         new_points = self.mlp(new_points)
 
-        return new_points.squeeze(-1).transpose(
-            1, 2).contiguous()  #(B, n, mlp[-1])
+        return new_points.squeeze(-1).transpose(1, 2
+                                               ).contiguous()  #(B, n, mlp[-1])
 
 
 if __name__ == "__main__":
@@ -224,7 +234,8 @@ if __name__ == "__main__":
     xyz_feats = Variable(torch.randn(2, 10, 6).cuda(), requires_grad=True)
 
     test_module = PointnetSAModuleMSG(
-        npoint=2, radii=[5.0, 10.0], nsamples=[6, 3], mlps=[[9, 3], [9, 6]])
+        npoint=2, radii=[5.0, 10.0], nsamples=[6, 3], mlps=[[9, 3], [9, 6]]
+    )
     test_module.cuda()
     print(test_module(xyz, xyz_feats))
 
@@ -237,7 +248,6 @@ if __name__ == "__main__":
 
     for _ in range(1):
         _, new_points = test_module(xyz, xyz_feats)
-        new_points.backward(
-            torch.cuda.FloatTensor(*new_points.size()).fill_(1))
+        new_points.backward(torch.cuda.FloatTensor(*new_points.size()).fill_(1))
         print(new_points)
         print(xyz.grad)

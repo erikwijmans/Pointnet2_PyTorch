@@ -128,12 +128,14 @@ if __name__ == "__main__":
     from torch.autograd import Variable
     import numpy as np
     import torch.optim as optim
+    import torch.autograd.profiler as profiler
     B = 2
-    N = 32
+    N = 2048
     inputs = torch.randn(B, N, 9).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
-    model = Pointnet2SSG(3)
+    model = Pointnet2MSG(3)
     model.cuda()
+
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
 

@@ -5,7 +5,8 @@ import os, sys, h5py, subprocess, shlex
 
 
 def _get_data_files(list_filename):
-    return [line.rstrip() for line in open(list_filename)]
+    with open(list_filename) as f:
+        return [line.rstrip() for line in f]
 
 
 def _load_data_file(name):
@@ -76,7 +77,7 @@ class Indoor3DSemSeg(data.Dataset):
         pt_idxs = np.arange(0, self.num_points)
         np.random.shuffle(pt_idxs)
 
-        current_points = torch.from_numpy(self.points[idx, pt_idxs, :]).type(
+        current_points = torch.from_numpy(self.points[idx, pt_idxs]).type(
             torch.FloatTensor
         )
         current_labels = torch.from_numpy(self.labels[idx, pt_idxs]).type(

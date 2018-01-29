@@ -21,8 +21,9 @@ __global__ void group_points_kernel(int b, int n, int c, int npoints,
     for (int j = index; j < npoints; j += stride) {
 	for (int k = 0; k < nsample; ++k) {
 	    int ii = idx[j * nsample + k];
-	    memcpy(out + j * nsample * c + k * c, points + ii * c,
-		   sizeof(float) * c);
+	    for (int l = 0; l < c; ++l) {
+		out[j * nsample * c + k * c + l] = points[ii * c + l];
+	    }
 	}
     }
 }

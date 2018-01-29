@@ -8,7 +8,8 @@ sys.path.append(BASE_DIR)
 
 
 def _get_data_files(list_filename):
-    return [line.rstrip()[5:] for line in open(list_filename)]
+    with open(list_filename) as f:
+        return [line.rstrip()[5:] for line in f]
 
 
 def _load_data_file(name):
@@ -80,6 +81,7 @@ class ModelNet40Cls(data.Dataset):
 
     def set_num_points(self, pts):
         self.num_points = pts
+        self.actual_number_of_points = pts
 
     def randomize(self):
         self.actual_number_of_points = min(

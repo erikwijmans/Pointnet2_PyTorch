@@ -16,6 +16,9 @@ import utils.pytorch_utils as pt_utils
 import utils.data_utils as d_utils
 import argparse
 
+torch.backends.cudnn.enabled = True
+torch.backends.cudnn.benchmark = True
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -141,8 +144,8 @@ if __name__ == "__main__":
         model,
         model_fn,
         optimizer,
-        checkpoint_name="cls_checkpoint",
-        best_name="cls_best",
+        checkpoint_name="checkpoints/cls_xyz",
+        best_name="checkpoints/cls_xyz_best",
         lr_scheduler=lr_scheduler,
         bnm_scheduler=bnm_scheduler
     )

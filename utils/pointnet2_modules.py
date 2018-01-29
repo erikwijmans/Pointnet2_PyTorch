@@ -31,7 +31,8 @@ class PointnetSAModuleMSG(nn.Module):
             radii: List[float],
             nsamples: List[int],
             mlps: List[List[int]],
-            bn: bool = True
+            bn: bool = True,
+            use_xyz: bool = True
     ):
         super().__init__()
 
@@ -43,7 +44,9 @@ class PointnetSAModuleMSG(nn.Module):
         for i in range(len(radii)):
             radius = radii[i]
             nsample = nsamples[i]
-            self.groupers.append(pointnet2_utils.QueryAndGroup(radius, nsample))
+            self.groupers.append(
+                pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz)
+            )
             mlp_spec = mlps[i]
             self.mlps.append(pt_utils.SharedMLP(mlp_spec, bn=bn))
 
@@ -111,7 +114,8 @@ class PointnetSAModule(nn.Module):
             npoint: int = None,
             radius: float = None,
             nsample: int = None,
-            bn: bool = True
+            bn: bool = True,
+            use_xyz: bool = True
     ):
         super().__init__()
         self.npoint = npoint
@@ -119,9 +123,11 @@ class PointnetSAModule(nn.Module):
         if self.npoint is not None:
             assert radius is not None
             assert nsample is not None
-            self.grouper = pointnet2_utils.QueryAndGroup(radius, nsample)
+            self.grouper = pointnet2_utils.QueryAndGroup(
+                radius, nsample, use_xyz=use_xyz
+            )
         else:
-            self.grouper = pointnet2_utils.GroupAll()
+            self.grouper = pointnet2_utils.GroupAll(use_xyz=use_xyz)
 
         self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
 

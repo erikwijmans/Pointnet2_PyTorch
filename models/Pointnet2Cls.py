@@ -88,9 +88,8 @@ class Pointnet2MSG(nn.Module):
                 npoint=512,
                 radii=[0.1, 0.2, 0.4],
                 nsamples=[32, 64, 128],
-                mlps=[[input_channels, 32, 32,
-                       64], [input_channels, 64, 64, 128],
-                      [input_channels, 64, 96, 128]]
+                mlps=[[input_channels, 64], [input_channels, 128],
+                      [input_channels, 128]]
             )
         )
 
@@ -100,9 +99,8 @@ class Pointnet2MSG(nn.Module):
                 npoint=128,
                 radii=[0.2, 0.4, 0.8],
                 nsamples=[16, 32, 64],
-                mlps=[[input_channels, 64, 64,
-                       128], [input_channels, 128, 128, 256],
-                      [input_channels, 128, 128, 256]]
+                mlps=[[input_channels, 128], [input_channels, 256],
+                      [input_channels, 256]]
             )
         )
         self.SA_modules.append(
@@ -135,7 +133,6 @@ if __name__ == "__main__":
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
     model = Pointnet2MSG(3)
     model.cuda()
-
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
 

@@ -1,24 +1,12 @@
 #ifndef _CUDA_UTILS_H
 #define _CUDA_UTILS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cmath>
 
 inline int opt_n_threads(int work_size) {
-	unsigned int n_threads = work_size;
-	n_threads--;
-	n_threads |= n_threads >> 1;
-	n_threads |= n_threads >> 2;
-	n_threads |= n_threads >> 4;
-	n_threads |= n_threads >> 8;
-	n_threads |= n_threads >> 16;
-	n_threads++;
+    const int pow_2 = std::log(static_cast<double>(work_size)) / std::log(2.0);
 
-	return max(min(n_threads / 2, 512), 2);
+    return max(min(1 << pow_2, 512), 32);
 }
 
-#ifdef __cplusplus
-}
-#endif
 #endif

@@ -13,9 +13,10 @@ __global__ void gather_points_kernel(int b, int n, int c, int m,
     for (int i = blockIdx.x; i < b; i += gridDim.x) {
 	for (int j = blockIdx.y * blockDim.x + threadIdx.x; j < m;
 	     j += blockDim.x * gridDim.y) {
-	    int a = idx[i * m + j];
-	    memcpy(out + (i * m + j) * c, points + (i * n + a) * c,
-		   sizeof(float) * c);
+	    const int jj = idx[i * m + j];
+	    for (int l = 0; l < c; ++l) {
+		out[(i * m + j) * c + l] = points[(i * n + jj) * c + l];
+	    }
 	}
     }
 }
@@ -25,7 +26,7 @@ void gather_points_kernel_wrapper(int b, int n, int c, int npoints,
 				  float *out, cudaStream_t stream) {
 
     cudaError_t err;
-    gather_points_kernel<<<dim3(2, 8, 1), opt_n_threads(npoints) / 4, 0,
+    gather_points_kernel<<<dim3(b, 8, 1), opt_n_threads(npoints), 0,
 			   stream>>>(b, n, c, npoints, points, idx, out);
 
     err = cudaGetLastError();

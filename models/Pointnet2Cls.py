@@ -40,7 +40,7 @@ def model_fn_decorator(criterion):
 
 class Pointnet2SSG(nn.Module):
 
-    def __init__(self, num_classes, input_channels=9):
+    def __init__(self, num_classes, input_channels=3):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
@@ -54,13 +54,10 @@ class Pointnet2SSG(nn.Module):
         )
         self.SA_modules.append(
             PointnetSAModule(
-                npoint=128,
-                radius=0.4,
-                nsample=64,
-                mlp=[128 + 3, 128, 128, 256]
+                npoint=128, radius=0.4, nsample=64, mlp=[128, 128, 128, 256]
             )
         )
-        self.SA_modules.append(PointnetSAModule(mlp=[256 + 3, 256, 512, 1024]))
+        self.SA_modules.append(PointnetSAModule(mlp=[256, 256, 512, 1024]))
 
         self.FC_layer = nn.Sequential(
             pt_utils.FC(1024, 512, bn=True),
@@ -71,15 +68,18 @@ class Pointnet2SSG(nn.Module):
         )
 
     def forward(self, xyz, points=None):
+        xyz = xyz.contiguous()
+        points = points.transpose(1, 2
+                                 ).contiguous() if points is not None else None
         for module in self.SA_modules:
             xyz, points = module(xyz, points)
 
-        return self.FC_layer(points.squeeze(1))
+        return self.FC_layer(points.squeeze(-1))
 
 
 class Pointnet2MSG(nn.Module):
 
-    def __init__(self, num_classes, input_channels=9):
+    def __init__(self, num_classes, input_channels=3):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
@@ -93,7 +93,7 @@ class Pointnet2MSG(nn.Module):
             )
         )
 
-        input_channels = 64 + 128 + 128 + 3
+        input_channels = 64 + 128 + 128
         self.SA_modules.append(
             PointnetSAModuleMSG(
                 npoint=128,
@@ -104,7 +104,7 @@ class Pointnet2MSG(nn.Module):
             )
         )
         self.SA_modules.append(
-            PointnetSAModule(mlp=[128 + 256 + 256 + 3, 256, 512, 1024])
+            PointnetSAModule(mlp=[128 + 256 + 256, 256, 512, 1024])
         )
 
         self.FC_layer = nn.Sequential(
@@ -116,10 +116,13 @@ class Pointnet2MSG(nn.Module):
         )
 
     def forward(self, xyz, points=None):
+        xyz = xyz.contiguous()
+        points = points.transpose(1, 2
+                                 ).contiguous() if points is not None else None
         for module in self.SA_modules:
             xyz, points = module(xyz, points)
 
-        return self.FC_layer(points.squeeze(1))
+        return self.FC_layer(points.squeeze(-1))
 
 
 if __name__ == "__main__":
@@ -129,9 +132,9 @@ if __name__ == "__main__":
     import torch.autograd.profiler as profiler
     B = 2
     N = 2048
-    inputs = torch.randn(B, N, 9).cuda()
+    inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
-    model = Pointnet2MSG(3)
+    model = Pointnet2MSG(3, input_channels=3)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)

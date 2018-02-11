@@ -561,6 +561,8 @@ class Trainer(object):
 
         self.checkpoint_name, self.best_name = checkpoint_name, best_name
         self.eval_frequency = eval_frequency
+        self.training_best = {}
+        self.eval_best = {}
 
         if log_name is not None:
             tb_log.configure(log_name)
@@ -617,6 +619,21 @@ class Trainer(object):
 
         self._print("Train", epoch, total_loss, eval_dict, count)
 
+        if 'loss' in self.training_best:
+            self.training_best['loss'] = np.min(
+                self.training_best['loss'], total_loss / count
+            )
+        else:
+            self.training_best['loss'] = total_loss / count
+
+        for k, v in eval_dict.items():
+            if k in self.training_best:
+                self.training_best[k] = np.max(
+                    self.training_best[k], stats.means(v)
+                )
+            else:
+                self.training_best[k] = stats.mean(v)
+
     def eval_epoch(self, epoch, d_loader):
         if d_loader is None:
             return
@@ -649,6 +666,19 @@ class Trainer(object):
             d_loader.dataset.randomize()
 
         self._print("Eval", epoch, total_loss, eval_dict, count)
+
+        if 'loss' in self.eval_best:
+            self.eval_best['loss'] = np.min(
+                self.eval_best['loss'], total_loss / count
+            )
+        else:
+            self.eval_best['loss'] = total_loss / count
+
+        for k, v in eval_dict.items():
+            if k in self.eval_best:
+                self.eval_best[k] = np.max(self.eval_best[k], stats.means(v))
+            else:
+                self.eval_best[k] = stats.mean(v)
 
         return total_loss / count, eval_dict
 
@@ -689,11 +719,26 @@ class Trainer(object):
                 best_loss = min(best_loss, val_loss)
                 save_checkpoint(
                     checkpoint_state(
-                        self.model, self.optimizer, val_loss, epoch
+                        self.model, self.optimizer, val_loss, epoch + 1
                     ),
                     is_best,
                     filename=self.checkpoint_name,
                     bestname=self.best_name
                 )
+
+        print("{0} Summary {0}".format("-" * 5))
+        print("** Training Stats **")
+        for k, v in natsorted(self.training_best.items(), key=itemgetter(0)):
+            if k == 'loss':
+                print("Best loss: {:.4e}".format(v))
+            else:
+                print("Best {}: {:2.3f}%".format(k, v * 1e2))
+
+        print("\n** Eval Stats **")
+        for k, v in natsorted(self.eval_best.items(), key=itemgetter(0)):
+            if k == 'loss':
+                print("Best loss: {:.4e}".format(v))
+            else:
+                print("Best {}: {:2.3f}%".format(k, v * 1e2))
 
         return best_loss

@@ -77,9 +77,9 @@ void three_nn_kernel_wrapper(int b, int n, int m, const float *unknown,
     }
 }
 
-// input: points(b, m, c), idx(b, n, 3), weight(b, n, 3)
-// output: out(b, n, c)
-__global__ void three_interpolate_kernel(int b, int m, int c, int n,
+// input: points(b, c, m), idx(b, n, 3), weight(b, n, 3)
+// output: out(b, c, n)
+__global__ void three_interpolate_kernel(int b, int c, int m, int n,
 					 const float *__restrict__ points,
 					 const int *__restrict__ idx,
 					 const float *__restrict__ weight,
@@ -92,9 +92,11 @@ __global__ void three_interpolate_kernel(int b, int m, int c, int n,
 
     out += batch_index * n * c;
 
-    int index = threadIdx.x;
-    int stride = blockDim.x;
-    for (int j = index; j < n; j += stride) {
+    const int index = threadIdx.y * blockDim.x + threadIdx.x;
+    const int stride = blockDim.y * blockDim.x;
+    for (int i = index; i < c * n; i += stride) {
+	const int l = i / n;
+	const int j = i % n;
 	float w1 = weight[j * 3 + 0];
 	float w2 = weight[j * 3 + 1];
 	float w3 = weight[j * 3 + 2];
@@ -103,21 +105,19 @@ __global__ void three_interpolate_kernel(int b, int m, int c, int n,
 	int i2 = idx[j * 3 + 1];
 	int i3 = idx[j * 3 + 2];
 
-	for (int l = 0; l < c; ++l) {
-	    out[j * c + l] = points[i1 * c + l] * w1 + points[i2 * c + l] * w2 +
-			     points[i3 * c + l] * w3;
-	}
+	out[i] = points[l * m + i1] * w1 + points[l * m + i2] * w2 +
+		 points[l * m + i3] * w3;
     }
 }
 
-void three_interpolate_kernel_wrapper(int b, int m, int c, int n,
+void three_interpolate_kernel_wrapper(int b, int c, int m, int n,
 				      const float *points, const int *idx,
 				      const float *weight, float *out,
 				      cudaStream_t stream) {
 
     cudaError_t err;
-    three_interpolate_kernel<<<b, opt_n_threads(n) / 4, 0, stream>>>(
-	b, m, c, n, points, idx, weight, out);
+    three_interpolate_kernel<<<b, opt_block_config(n, c), 0, stream>>>(
+	b, c, m, n, points, idx, weight, out);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {
@@ -128,11 +128,11 @@ void three_interpolate_kernel_wrapper(int b, int m, int c, int n,
     }
 }
 
-// input: grad_out(b, n, c), idx(b, n, 3), weight(b, n, 3)
-// output: grad_points(b, m, c)
+// input: grad_out(b, c, n), idx(b, n, 3), weight(b, n, 3)
+// output: grad_points(b, c, m)
 
 __global__ void three_interpolate_grad_kernel(
-    int b, int n, int c, int m, const float *__restrict__ grad_out,
+    int b, int c, int n, int m, const float *__restrict__ grad_out,
     const int *__restrict__ idx, const float *__restrict__ weight,
     float *__restrict__ grad_points) {
     int batch_index = blockIdx.x;
@@ -141,9 +141,11 @@ __global__ void three_interpolate_grad_kernel(
     weight += batch_index * n * 3;
     grad_points += batch_index * m * c;
 
-    int index = threadIdx.x;
-    int stride = blockDim.x;
-    for (int j = index; j < n; j += stride) {
+    const int index = threadIdx.y * blockDim.x + threadIdx.x;
+    const int stride = blockDim.y * blockDim.x;
+    for (int i = index; i < c * n; i += stride) {
+	const int l = i / n;
+	const int j = i % n;
 	float w1 = weight[j * 3 + 0];
 	float w2 = weight[j * 3 + 1];
 	float w3 = weight[j * 3 + 2];
@@ -152,11 +154,9 @@ __global__ void three_interpolate_grad_kernel(
 	int i2 = idx[j * 3 + 1];
 	int i3 = idx[j * 3 + 2];
 
-	for (int l = 0; l < c; ++l) {
-	    atomicAdd(grad_points + i1 * c + l, grad_out[j * c + l] * w1);
-	    atomicAdd(grad_points + i2 * c + l, grad_out[j * c + l] * w2);
-	    atomicAdd(grad_points + i3 * c + l, grad_out[j * c + l] * w3);
-	}
+	atomicAdd(grad_points + l * m + i1, grad_out[i] * w1);
+	atomicAdd(grad_points + l * m + i2, grad_out[i] * w2);
+	atomicAdd(grad_points + l * m + i3, grad_out[i] * w3);
     }
 }
 
@@ -167,7 +167,7 @@ void three_interpolate_grad_kernel_wrapper(int b, int n, int c, int m,
 					   cudaStream_t stream) {
 
     cudaError_t err;
-    three_interpolate_grad_kernel<<<b, opt_n_threads(n) / 4, 0, stream>>>(
+    three_interpolate_grad_kernel<<<b, opt_block_config(n, c), 0, stream>>>(
 	b, n, c, m, grad_out, idx, weight, grad_points);
 
     err = cudaGetLastError();

@@ -4,9 +4,9 @@
 #include "cuda_utils.h"
 #include "group_points_gpu.h"
 
-// input: points(b, n, c) idx(b, npoints, nsample)
-// output: out(b, npoints, nsample, c)
-__global__ void group_points_kernel(int b, int n, int c, int npoints,
+// input: points(b, c, n) idx(b, npoints, nsample)
+// output: out(b, c, npoints, nsample)
+__global__ void group_points_kernel(int b, int c, int n, int npoints,
 				    int nsample,
 				    const float *__restrict__ points,
 				    const int *__restrict__ idx,
@@ -16,25 +16,25 @@ __global__ void group_points_kernel(int b, int n, int c, int npoints,
     idx += batch_index * npoints * nsample;
     out += batch_index * npoints * nsample * c;
 
-    int index = threadIdx.x;
-    int stride = blockDim.x;
-    for (int j = index; j < npoints; j += stride) {
+    const int index = threadIdx.y * blockDim.x + threadIdx.x;
+    const int stride = blockDim.y * blockDim.x;
+    for (int i = index; i < c * npoints; i += stride) {
+	const int l = i / npoints;
+	const int j = i % npoints;
 	for (int k = 0; k < nsample; ++k) {
 	    int ii = idx[j * nsample + k];
-	    for (int l = 0; l < c; ++l) {
-		out[j * nsample * c + k * c + l] = points[ii * c + l];
-	    }
+	    out[(l * npoints + j) * nsample + k] = points[l * n + ii];
 	}
     }
 }
 
-void group_points_kernel_wrapper(int b, int n, int c, int npoints, int nsample,
+void group_points_kernel_wrapper(int b, int c, int n, int npoints, int nsample,
 				 const float *points, const int *idx,
 				 float *out, cudaStream_t stream) {
 
     cudaError_t err;
-    group_points_kernel<<<b, opt_n_threads(npoints), 0, stream>>>(
-	b, n, c, npoints, nsample, points, idx, out);
+    group_points_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
+	b, c, n, npoints, nsample, points, idx, out);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {
@@ -43,38 +43,38 @@ void group_points_kernel_wrapper(int b, int n, int c, int npoints, int nsample,
     }
 }
 
-// input: grad_out(b, npoints, nsample, c), idx(b, npoints, nsample)
-// output: grad_points(b, n, c)
-__global__ void group_points_grad_kernel(int b, int n, int c, int npoints,
+// input: grad_out(b, c, npoints, nsample), idx(b, npoints, nsample)
+// output: grad_points(b, c, n)
+__global__ void group_points_grad_kernel(int b, int c, int n, int npoints,
 					 int nsample,
 					 const float *__restrict__ grad_out,
 					 const int *__restrict__ idx,
 					 float *__restrict__ grad_points) {
     int batch_index = blockIdx.x;
-    grad_points += batch_index * n * c;
-    idx += batch_index * npoints * nsample;
     grad_out += batch_index * npoints * nsample * c;
+    idx += batch_index * npoints * nsample;
+    grad_points += batch_index * n * c;
 
-    int index = threadIdx.x;
-    int stride = blockDim.x;
-    for (int j = index; j < npoints; j += stride) {
+    const int index = threadIdx.y * blockDim.x + threadIdx.x;
+    const int stride = blockDim.y * blockDim.x;
+    for (int i = index; i < c * npoints; i += stride) {
+	const int l = i / npoints;
+	const int j = i % npoints;
 	for (int k = 0; k < nsample; ++k) {
 	    int ii = idx[j * nsample + k];
-	    for (int l = 0; l < c; ++l) {
-		atomicAdd(grad_points + ii * c + l,
-			  grad_out[j * nsample * c + k * c + l]);
-	    }
+	    atomicAdd(grad_points + l * n + ii,
+		      grad_out[(l * npoints + j) * nsample + k]);
 	}
     }
 }
 
-void group_points_grad_kernel_wrapper(int b, int n, int c, int npoints,
+void group_points_grad_kernel_wrapper(int b, int c, int n, int npoints,
 				      int nsample, const float *grad_out,
 				      const int *idx, float *grad_points,
 				      cudaStream_t stream) {
     cudaError_t err;
-    group_points_grad_kernel<<<b, opt_n_threads(npoints), 0, stream>>>(
-	b, n, c, npoints, nsample, grad_out, idx, grad_points);
+    group_points_grad_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
+	b, c, n, npoints, nsample, grad_out, idx, grad_points);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {

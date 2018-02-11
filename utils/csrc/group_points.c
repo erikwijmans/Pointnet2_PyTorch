@@ -4,7 +4,7 @@
 
 extern THCState *state;
 
-int group_points_wrapper(int b, int n, int c, int npoints, int nsample,
+int group_points_wrapper(int b, int c, int n, int npoints, int nsample,
 			 THCudaTensor *points_tensor,
 			 THCudaIntTensor *idx_tensor,
 			 THCudaTensor *out_tensor) {
@@ -15,12 +15,12 @@ int group_points_wrapper(int b, int n, int c, int npoints, int nsample,
 
     cudaStream_t stream = THCState_getCurrentStream(state);
 
-    group_points_kernel_wrapper(b, n, c, npoints, nsample, points, idx, out,
+    group_points_kernel_wrapper(b, c, n, npoints, nsample, points, idx, out,
 				stream);
     return 1;
 }
 
-int group_points_grad_wrapper(int b, int n, int c, int npoints, int nsample,
+int group_points_grad_wrapper(int b, int c, int n, int npoints, int nsample,
 			      THCudaTensor *grad_out_tensor,
 			      THCudaIntTensor *idx_tensor,
 			      THCudaTensor *grad_points_tensor) {
@@ -31,7 +31,7 @@ int group_points_grad_wrapper(int b, int n, int c, int npoints, int nsample,
 
     cudaStream_t stream = THCState_getCurrentStream(state);
 
-    group_points_grad_kernel_wrapper(b, n, c, npoints, nsample, grad_out, idx,
+    group_points_grad_kernel_wrapper(b, c, n, npoints, nsample, grad_out, idx,
 				     grad_points, stream);
     return 1;
 }

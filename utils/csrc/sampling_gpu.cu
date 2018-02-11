@@ -4,30 +4,63 @@
 #include "cuda_utils.h"
 #include "sampling_gpu.h"
 
-// input: points(b, n, c) idx(b, m)
-// output: out(b, m, c)
-__global__ void gather_points_kernel(int b, int n, int c, int m,
+// input: points(b, c, n) idx(b, m)
+// output: out(b, c, m)
+__global__ void gather_points_kernel(int b, int c, int n, int m,
 				     const float *__restrict__ points,
 				     const int *__restrict__ idx,
 				     float *__restrict__ out) {
     for (int i = blockIdx.x; i < b; i += gridDim.x) {
-	for (int j = blockIdx.y * blockDim.x + threadIdx.x; j < m;
-	     j += blockDim.x * gridDim.y) {
-	    const int jj = idx[i * m + j];
-	    for (int l = 0; l < c; ++l) {
-		out[(i * m + j) * c + l] = points[(i * n + jj) * c + l];
+	for (int l = blockIdx.y; l < c; l += gridDim.y) {
+	    for (int j = threadIdx.x; j < m; j += blockDim.x) {
+		int a = idx[i * m + j];
+		out[(i * c + l) * m + j] = points[(i * c + l) * n + a];
 	    }
 	}
     }
 }
 
-void gather_points_kernel_wrapper(int b, int n, int c, int npoints,
+void gather_points_kernel_wrapper(int b, int c, int n, int npoints,
 				  const float *points, const int *idx,
 				  float *out, cudaStream_t stream) {
 
     cudaError_t err;
-    gather_points_kernel<<<dim3(b, 8, 1), opt_n_threads(npoints), 0,
-			   stream>>>(b, n, c, npoints, points, idx, out);
+    gather_points_kernel<<<dim3(b, c, 1), opt_n_threads(npoints), 0, stream>>>(
+	b, c, n, npoints, points, idx, out);
+
+    err = cudaGetLastError();
+    if (cudaSuccess != err) {
+	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
+	exit(-1);
+    }
+}
+
+// input: grad_out(b, c, m) idx(b, m)
+// output: grad_points(b, c, n)
+__global__ void gather_points_grad_kernel(int b, int c, int n, int m,
+					  const float *__restrict__ grad_out,
+					  const int *__restrict__ idx,
+					  float *__restrict__ grad_points) {
+    for (int i = blockIdx.x; i < b; i += gridDim.x) {
+	for (int l = blockIdx.y; l < c; l += gridDim.y) {
+	    for (int j = threadIdx.x; j < m; j += blockDim.x) {
+		int a = idx[i * m + j];
+		atomicAdd(grad_points + (i * c + l) * n + a,
+			  grad_out[(i * c + l) * m + j]);
+	    }
+	}
+    }
+}
+
+void gather_points_grad_kernel_wrapper(int b, int c, int n, int npoints,
+				       const float *grad_out, const int *idx,
+				       float *grad_points,
+				       cudaStream_t stream) {
+
+    cudaError_t err;
+    gather_points_grad_kernel<<<dim3(b, c, 1), opt_n_threads(npoints), 0,
+				stream>>>(b, c, n, npoints, grad_out, idx,
+					  grad_points);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {

@@ -144,8 +144,8 @@ if __name__ == "__main__":
         model,
         model_fn,
         optimizer,
-        checkpoint_name="checkpoints/cls_xyz",
-        best_name="checkpoints/cls_xyz_best",
+        checkpoint_name="checkpoints/single_layer",
+        best_name="checkpoints/single_layer_best",
         lr_scheduler=lr_scheduler,
         bnm_scheduler=bnm_scheduler
     )

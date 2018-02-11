@@ -19,7 +19,7 @@ void three_nn_wrapper(int b, int n, int m, THCudaTensor *unknown_tensor,
     three_nn_kernel_wrapper(b, n, m, unknown, known, dist2, idx, stream);
 }
 
-void three_interpolate_wrapper(int b, int m, int c, int n,
+void three_interpolate_wrapper(int b, int c, int m, int n,
 			       THCudaTensor *points_tensor,
 			       THCudaIntTensor *idx_tensor,
 			       THCudaTensor *weight_tensor,
@@ -31,11 +31,11 @@ void three_interpolate_wrapper(int b, int m, int c, int n,
     const int *idx = THCudaIntTensor_data(state, idx_tensor);
 
     cudaStream_t stream = THCState_getCurrentStream(state);
-    three_interpolate_kernel_wrapper(b, m, c, n, points, idx, weight, out,
+    three_interpolate_kernel_wrapper(b, c, m, n, points, idx, weight, out,
 				     stream);
 }
 
-void three_interpolate_grad_wrapper(int b, int n, int c, int m,
+void three_interpolate_grad_wrapper(int b, int c, int n, int m,
 				    THCudaTensor *grad_out_tensor,
 				    THCudaIntTensor *idx_tensor,
 				    THCudaTensor *weight_tensor,
@@ -47,6 +47,6 @@ void three_interpolate_grad_wrapper(int b, int n, int c, int m,
     const int *idx = THCudaIntTensor_data(state, idx_tensor);
 
     cudaStream_t stream = THCState_getCurrentStream(state);
-    three_interpolate_grad_kernel_wrapper(b, n, c, m, grad_out, idx, weight,
+    three_interpolate_grad_kernel_wrapper(b, c, n, m, grad_out, idx, weight,
 					  grad_points, stream);
 }

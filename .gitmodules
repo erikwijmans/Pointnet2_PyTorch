@@ -1,3 +1,0 @@
-[submodule "utils/pytorch_utils"]
-	path = utils/pytorch_utils
-	url = git@github.com:erikwijmans/etw_pytorch_utils.git

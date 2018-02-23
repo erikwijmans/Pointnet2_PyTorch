@@ -13,7 +13,7 @@ from models import Pointnet2ClsMSG as Pointnet
 from models.Pointnet2Cls import model_fn_decorator
 from data import ModelNet40Cls
 import utils.pytorch_utils as pt_utils
-import utils.data_utils as d_utils
+import data.data_utils as d_utils
 import argparse
 
 torch.backends.cudnn.enabled = True
@@ -85,9 +85,12 @@ if __name__ == "__main__":
 
     transforms = transforms.Compose([
         d_utils.PointcloudToTensor(),
-        d_utils.PointcloudRotate(x_axis=True, z_axis=True),
+        d_utils.PointcloudScale(),
+        d_utils.PointcloudRotate(),
+        d_utils.PointcloudRotatePerturbation(),
         d_utils.PointcloudTranslate(),
-        d_utils.PointcloudJitter()
+        d_utils.PointcloudJitter(),
+        d_utils.PointcloudRandomInputDropout()
     ])
 
     test_set = ModelNet40Cls(

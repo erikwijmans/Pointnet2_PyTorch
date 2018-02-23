@@ -38,45 +38,6 @@ def model_fn_decorator(criterion):
     return model_fn
 
 
-class Pointnet2SSG(nn.Module):
-
-    def __init__(self, num_classes, input_channels=3):
-        super().__init__()
-
-        self.SA_modules = nn.ModuleList()
-        self.SA_modules.append(
-            PointnetSAModule(
-                npoint=512,
-                radius=0.2,
-                nsample=64,
-                mlp=[input_channels, 64, 64, 128]
-            )
-        )
-        self.SA_modules.append(
-            PointnetSAModule(
-                npoint=128, radius=0.4, nsample=64, mlp=[128, 128, 128, 256]
-            )
-        )
-        self.SA_modules.append(PointnetSAModule(mlp=[256, 256, 512, 1024]))
-
-        self.FC_layer = nn.Sequential(
-            pt_utils.FC(1024, 512, bn=True),
-            nn.Dropout(p=0.5),
-            pt_utils.FC(512, 256, bn=True),
-            nn.Dropout(p=0.5),
-            pt_utils.FC(256, num_classes, activation=None)
-        )
-
-    def forward(self, xyz, points=None):
-        xyz = xyz.contiguous()
-        points = points.transpose(1, 2
-                                 ).contiguous() if points is not None else None
-        for module in self.SA_modules:
-            xyz, points = module(xyz, points)
-
-        return self.FC_layer(points.squeeze(-1))
-
-
 class Pointnet2MSG(nn.Module):
 
     def __init__(self, num_classes, input_channels=3):
@@ -117,8 +78,9 @@ class Pointnet2MSG(nn.Module):
 
     def forward(self, xyz, points=None):
         xyz = xyz.contiguous()
-        points = points.transpose(1, 2
-                                 ).contiguous() if points is not None else None
+        points = (
+            points.transpose(1, 2).contiguous() if points is not None else None
+        )
         for module in self.SA_modules:
             xyz, points = module(xyz, points)
 

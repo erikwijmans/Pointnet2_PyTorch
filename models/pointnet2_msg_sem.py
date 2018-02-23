@@ -37,68 +37,6 @@ def model_fn_decorator(criterion):
     return model_fn
 
 
-class Pointnet2SSG(nn.Module):
-
-    def __init__(self, num_classes, input_channels=9):
-        super().__init__()
-
-        self.SA_modules = nn.ModuleList()
-        self.SA_modules.append(
-            PointnetSAModule(
-                npoint=1024,
-                radius=0.1,
-                nsample=32,
-                mlp=[input_channels, 32, 32, 64]
-            )
-        )
-        self.SA_modules.append(
-            PointnetSAModule(
-                npoint=256, radius=0.2, nsample=32, mlp=[64 + 3, 64, 64, 128]
-            )
-        )
-        self.SA_modules.append(
-            PointnetSAModule(
-                npoint=64, radius=0.4, nsample=32, mlp=[128 + 3, 128, 128, 256]
-            )
-        )
-        self.SA_modules.append(
-            PointnetSAModule(
-                npoint=16, radius=0.8, nsample=32, mlp=[256 + 3, 256, 256, 512]
-            )
-        )
-
-        self.FP_modules = nn.ModuleList()
-        self.FP_modules.append(
-            PointnetFPModule(mlp=[128 + input_channels - 3, 128, 128, 128])
-        )
-        self.FP_modules.append(PointnetFPModule(mlp=[256 + 64, 256, 128]))
-        self.FP_modules.append(PointnetFPModule(mlp=[256 + 128, 256, 256]))
-        self.FP_modules.append(PointnetFPModule(mlp=[512 + 256, 256, 256]))
-
-        self.FC_layer = nn.Sequential(
-            pt_utils.Conv1d(128, 128, bn=True), nn.Dropout(),
-            pt_utils.Conv1d(128, num_classes, activation=None)
-        )
-
-    def forward(self, xyz, points=None):
-        xyz = xyz.contiguous()
-        points = points.transpose(1, 2
-                                 ).contiguous() if points is not None else None
-
-        l_xyz, l_points = [xyz], [points]
-        for i in range(len(self.SA_modules)):
-            li_xyz, li_points = self.SA_modules[i](l_xyz[i], l_points[i])
-            l_xyz.append(li_xyz)
-            l_points.append(li_points)
-
-        for i in range(-1, -(len(self.FP_modules) + 1), -1):
-            l_points[i - 1] = self.FP_modules[i](
-                l_xyz[i - 1], l_xyz[i], l_points[i - 1], l_points[i]
-            )
-
-        return self.FC_layer(l_points[0]).transpose(1, 2).contiguous()
-
-
 class Pointnet2MSG(nn.Module):
 
     def __init__(self, num_classes, input_channels=9):
@@ -166,8 +104,9 @@ class Pointnet2MSG(nn.Module):
 
     def forward(self, xyz, points=None):
         xyz = xyz.contiguous()
-        points = points.transpose(1, 2
-                                 ).contiguous() if points is not None else None
+        points = (
+            points.transpose(1, 2).contiguous() if points is not None else None
+        )
 
         l_xyz, l_points = [xyz], [points]
         for i in range(len(self.SA_modules)):

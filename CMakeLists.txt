@@ -19,7 +19,6 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/utils/_ext/pointnet2/_poi
 		   DEPENDS ${wrapper_sources}
 		   VERBATIM)
 
-add_custom_target(ext ALL
+add_custom_target(pointnet2_ext ALL
 		  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/utils/_ext/pointnet2/_pointnet2.so")
 
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/utils/_ext")

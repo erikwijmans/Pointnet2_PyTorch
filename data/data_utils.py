@@ -31,7 +31,7 @@ def angle_axis(angle: float, axis: np.ndarray):
         + (1.0 - cosval) * np.outer(u, u)
     )
     # yapf: enable
-    return R
+    return R.float()
 
 
 class PointcloudScale(object):

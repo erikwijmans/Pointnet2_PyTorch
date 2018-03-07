@@ -68,7 +68,7 @@ class ModelNet40Cls(data.Dataset):
         pt_idxs = np.arange(0, self.actual_number_of_points)
         np.random.shuffle(pt_idxs)
 
-        current_points = self.points[idx, pt_idxs, :]
+        current_points = self.points[idx, pt_idxs].copy()
         label = torch.from_numpy(self.labels[idx]).type(torch.LongTensor)
 
         if self.transforms is not None:

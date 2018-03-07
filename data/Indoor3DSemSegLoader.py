@@ -77,12 +77,10 @@ class Indoor3DSemSeg(data.Dataset):
         pt_idxs = np.arange(0, self.num_points)
         np.random.shuffle(pt_idxs)
 
-        current_points = torch.from_numpy(self.points[idx, pt_idxs]).type(
-            torch.FloatTensor
-        )
-        current_labels = torch.from_numpy(self.labels[idx, pt_idxs]).type(
-            torch.LongTensor
-        )
+        current_points = torch.from_numpy(self.points[idx, pt_idxs].copy()
+                                         ).type(torch.FloatTensor)
+        current_labels = torch.from_numpy(self.labels[idx, pt_idxs].copy()
+                                         ).type(torch.LongTensor)
 
         return current_points, current_labels
 

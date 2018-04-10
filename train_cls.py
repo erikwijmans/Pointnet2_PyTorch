@@ -10,7 +10,7 @@ import os
 import tensorboard_logger as tb_log
 
 from models import Pointnet2ClsMSG as Pointnet
-from models.Pointnet2Cls import model_fn_decorator
+from models.pointnet2_msg_cls import model_fn_decorator
 from data import ModelNet40Cls
 import utils.pytorch_utils as pt_utils
 import data.data_utils as d_utils

@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     tb_log.configure('runs/{}'.format(args.run_name))
 
-    model = Pointnet(input_channels=3, num_classes=40)
+    model = Pointnet(input_channels=3, num_classes=40, use_xyz=False)
     model.cuda()
     optimizer = optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay

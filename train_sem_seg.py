@@ -104,7 +104,7 @@ if __name__ == "__main__":
         shuffle=True
     )
 
-    model = Pointnet(num_classes=13)
+    model = Pointnet(num_classes=13, use_xyz=False)
     model.cuda()
     optimizer = optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay

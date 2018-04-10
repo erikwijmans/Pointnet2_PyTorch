@@ -40,7 +40,7 @@ def model_fn_decorator(criterion):
 
 class Pointnet2MSG(nn.Module):
 
-    def __init__(self, num_classes, input_channels=3):
+    def __init__(self, num_classes, input_channels=3, use_xyz=True):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
@@ -50,7 +50,8 @@ class Pointnet2MSG(nn.Module):
                 radii=[0.1, 0.2, 0.4],
                 nsamples=[32, 64, 128],
                 mlps=[[input_channels, 64], [input_channels, 128],
-                      [input_channels, 128]]
+                      [input_channels, 128]],
+                use_xyz=use_xyz
             )
         )
 
@@ -61,11 +62,13 @@ class Pointnet2MSG(nn.Module):
                 radii=[0.2, 0.4, 0.8],
                 nsamples=[16, 32, 64],
                 mlps=[[input_channels, 128], [input_channels, 256],
-                      [input_channels, 256]]
+                      [input_channels, 256]],
             )
         )
         self.SA_modules.append(
-            PointnetSAModule(mlp=[128 + 256 + 256, 256, 512, 1024])
+            PointnetSAModule(
+                mlp=[128 + 256 + 256, 256, 512, 1024],
+            )
         )
 
         self.FC_layer = nn.Sequential(
@@ -97,6 +100,22 @@ if __name__ == "__main__":
     inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
     model = Pointnet2MSG(3, input_channels=3)
+    model.cuda()
+
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+
+    model_fn = model_fn_decorator(nn.CrossEntropyLoss())
+    for _ in range(20):
+        optimizer.zero_grad()
+        _, loss, _ = model_fn(model, (inputs, labels))
+        loss.backward()
+        print(loss.data[0])
+        optimizer.step()
+
+    # With with use_xyz=False
+    inputs = torch.randn(B, N, 3).cuda()
+    labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
+    model = Pointnet2MSG(3, input_channels=3, use_xyz=False)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)

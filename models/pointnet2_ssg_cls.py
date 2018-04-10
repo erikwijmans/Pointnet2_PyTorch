@@ -40,7 +40,7 @@ def model_fn_decorator(criterion):
 
 class Pointnet2SSG(nn.Module):
 
-    def __init__(self, num_classes, input_channels=3):
+    def __init__(self, num_classes, input_channels=3, use_xyz=True):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
@@ -49,7 +49,8 @@ class Pointnet2SSG(nn.Module):
                 npoint=512,
                 radius=0.2,
                 nsample=64,
-                mlp=[input_channels, 64, 64, 128]
+                mlp=[input_channels, 64, 64, 128],
+                use_xyz=use_xyz
             )
         )
         self.SA_modules.append(
@@ -88,6 +89,22 @@ if __name__ == "__main__":
     inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
     model = Pointnet2SSG(3, input_channels=3)
+    model.cuda()
+
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+
+    model_fn = model_fn_decorator(nn.CrossEntropyLoss())
+    for _ in range(20):
+        optimizer.zero_grad()
+        _, loss, _ = model_fn(model, (inputs, labels))
+        loss.backward()
+        print(loss.data[0])
+        optimizer.step()
+
+    # use_xyz=False
+    inputs = torch.randn(B, N, 3).cuda()
+    labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
+    model = Pointnet2SSG(3, input_channels=3, use_xyz=False)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)

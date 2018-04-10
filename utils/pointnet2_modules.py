@@ -22,7 +22,7 @@ class _PointnetSAModuleBase(nn.Module):
         ----------
         xyz : torch.Tensor
             (B, N, 3) tensor of the xyz coordinates of the points
-        point : torch.Tensor
+        points : torch.Tensor
             (B, N, C) tensor of the descriptors of the the points
 
         Returns

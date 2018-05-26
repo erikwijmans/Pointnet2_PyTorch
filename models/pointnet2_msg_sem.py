@@ -39,7 +39,7 @@ def model_fn_decorator(criterion):
 
 class Pointnet2MSG(nn.Module):
 
-    def __init__(self, num_classes, input_channels=9):
+    def __init__(self, num_classes, input_channels=9, use_xyz=True):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
@@ -49,7 +49,8 @@ class Pointnet2MSG(nn.Module):
                 npoint=1024,
                 radii=[0.05, 0.1],
                 nsamples=[16, 32],
-                mlps=[[c_in, 16, 16, 32], [c_in, 32, 32, 64]]
+                mlps=[[c_in, 16, 16, 32], [c_in, 32, 32, 64]],
+                use_xyz=use_xyz
             )
         )
         c_out_0 = 32 + 64
@@ -60,7 +61,7 @@ class Pointnet2MSG(nn.Module):
                 npoint=256,
                 radii=[0.1, 0.2],
                 nsamples=[16, 32],
-                mlps=[[c_in, 64, 64, 128], [c_in, 64, 96, 128]]
+                mlps=[[c_in, 64, 64, 128], [c_in, 64, 96, 128]],
             )
         )
         c_out_1 = 128 + 128
@@ -71,7 +72,7 @@ class Pointnet2MSG(nn.Module):
                 npoint=64,
                 radii=[0.2, 0.4],
                 nsamples=[16, 32],
-                mlps=[[c_in, 128, 196, 256], [c_in, 128, 196, 256]]
+                mlps=[[c_in, 128, 196, 256], [c_in, 128, 196, 256]],
             )
         )
         c_out_2 = 256 + 256
@@ -82,14 +83,14 @@ class Pointnet2MSG(nn.Module):
                 npoint=16,
                 radii=[0.4, 0.8],
                 nsamples=[16, 32],
-                mlps=[[c_in, 256, 256, 512], [c_in, 256, 384, 512]]
+                mlps=[[c_in, 256, 256, 512], [c_in, 256, 384, 512]],
             )
         )
         c_out_3 = 512 + 512
 
         self.FP_modules = nn.ModuleList()
         self.FP_modules.append(
-            PointnetFPModule(mlp=[256 + input_channels, 128, 128])
+            PointnetFPModule(mlp=[256 + (input_channels if use_xyz else 0), 128, 128])
         )
         self.FP_modules.append(PointnetFPModule(mlp=[512 + c_out_0, 256, 256]))
         self.FP_modules.append(PointnetFPModule(mlp=[512 + c_out_1, 512, 512]))
@@ -132,6 +133,23 @@ if __name__ == "__main__":
     labels = torch.from_numpy(np.random.randint(0, 3,
                                                 size=B * N)).view(B, N).cuda()
     model = Pointnet2MSG(3, input_channels=3)
+    model.cuda()
+
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+
+    model_fn = model_fn_decorator(nn.CrossEntropyLoss())
+    for _ in range(20):
+        optimizer.zero_grad()
+        _, loss, _ = model_fn(model, (inputs, labels))
+        loss.backward()
+        print(loss.data[0])
+        optimizer.step()
+
+    # with use_xyz=False
+    inputs = torch.randn(B, N, 3).cuda()
+    labels = torch.from_numpy(np.random.randint(0, 3,
+                                                size=B * N)).view(B, N).cuda()
+    model = Pointnet2MSG(3, input_channels=3, use_xyz=False)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)

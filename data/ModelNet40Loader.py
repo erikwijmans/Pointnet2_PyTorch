@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     transforms = transforms.Compose([
         d_utils.PointcloudToTensor(),
-        d_utils.PointcloudRotate(x_axis=True),
+        d_utils.PointcloudRotate(axis=np.array([1,0,0])),
         d_utils.PointcloudScale(),
         d_utils.PointcloudTranslate(),
         d_utils.PointcloudJitter()

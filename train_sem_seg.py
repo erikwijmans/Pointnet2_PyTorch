@@ -9,8 +9,8 @@ import numpy as np
 import tensorboard_logger as tb_log
 import os
 
-from models import Pointnet2SSG as Pointnet
-from models.Pointnet2SemSeg import model_fn_decorator
+from models import Pointnet2SemMSG as Pointnet
+from models.pointnet2_msg_sem import model_fn_decorator
 from data import Indoor3DSemSeg
 import utils.pytorch_utils as pt_utils
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         shuffle=True
     )
 
-    model = Pointnet(num_classes=13)
+    model = Pointnet(num_classes=13, use_xyz=False)
     model.cuda()
     optimizer = optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay

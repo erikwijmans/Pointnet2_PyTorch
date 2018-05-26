@@ -39,7 +39,7 @@ def model_fn_decorator(criterion):
 
 class Pointnet2SSG(nn.Module):
 
-    def __init__(self, num_classes, input_channels=3):
+    def __init__(self, num_classes, input_channels=3, use_xyz=True):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
@@ -48,7 +48,8 @@ class Pointnet2SSG(nn.Module):
                 npoint=1024,
                 radius=0.1,
                 nsample=32,
-                mlp=[input_channels, 32, 32, 64]
+                mlp=[input_channels, 32, 32, 64],
+                use_xyz=use_xyz
             )
         )
         self.SA_modules.append(
@@ -69,7 +70,7 @@ class Pointnet2SSG(nn.Module):
 
         self.FP_modules = nn.ModuleList()
         self.FP_modules.append(
-            PointnetFPModule(mlp=[128 + input_channels, 128, 128, 128])
+            PointnetFPModule(mlp=[128 + (input_channels if use_xyz else 0), 128, 128, 128])
         )
         self.FP_modules.append(PointnetFPModule(mlp=[256 + 64, 256, 128]))
         self.FP_modules.append(PointnetFPModule(mlp=[256 + 128, 256, 256]))
@@ -115,6 +116,25 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
 
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
+    for _ in range(20):
+        optimizer.zero_grad()
+        _, loss, _ = model_fn(model, (inputs, labels))
+        loss.backward()
+        print(loss.data[0])
+        optimizer.step()
+
+
+    # try with use_xyz=False too
+    inputs = torch.randn(B, N, 3).cuda()
+    labels = torch.from_numpy(np.random.randint(0, 3,
+                                                size=B * N)).view(B, N).cuda()
+    model = Pointnet2SSG(3, input_channels=3, use_xyz=False)
+    model.cuda()
+
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+
+    model_fn = model_fn_decorator(nn.CrossEntropyLoss())
+
     for _ in range(20):
         optimizer.zero_grad()
         _, loss, _ = model_fn(model, (inputs, labels))

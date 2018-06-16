@@ -20,13 +20,7 @@ def model_fn_decorator(criterion):
         inputs = Variable(inputs.cuda(async=True), volatile=eval)
         labels = Variable(labels.cuda(async=True), volatile=eval)
 
-        xyz = inputs[..., :3]
-        if inputs.size(2) > 3:
-            points = inputs[..., 3:]
-        else:
-            points = None
-
-        preds = model(xyz, points)
+        preds = model(inputs)
         labels = labels.view(-1)
         loss = criterion(preds, labels)
 
@@ -39,6 +33,20 @@ def model_fn_decorator(criterion):
 
 
 class Pointnet2SSG(nn.Module):
+    r"""
+        PointNet2 with single-scale grouping
+        Classification network
+
+        Parameters
+        ----------
+        num_classes: int
+            Number of semantics classes to predict over -- size of softmax classifier
+        input_channels: int = 3
+            Number of input channels in the feature descriptor for each point.  If the point cloud is Nx9, this
+            value should be 6 as in an Nx9 point cloud, 3 of the channels are xyz, and 6 are feature descriptors
+        use_xyz: bool = True
+            Whether or not to use the xyz position of a point as a feature
+    """
 
     def __init__(self, num_classes, input_channels=3, use_xyz=True):
         super().__init__()
@@ -55,10 +63,16 @@ class Pointnet2SSG(nn.Module):
         )
         self.SA_modules.append(
             PointnetSAModule(
-                npoint=128, radius=0.4, nsample=64, mlp=[128, 128, 128, 256]
+                npoint=128,
+                radius=0.4,
+                nsample=64,
+                mlp=[128, 128, 128, 256],
+                use_xyz=use_xyz
             )
         )
-        self.SA_modules.append(PointnetSAModule(mlp=[256, 256, 512, 1024]))
+        self.SA_modules.append(
+            PointnetSAModule(mlp=[256, 256, 512, 1024], use_xyz=use_xyz)
+        )
 
         self.FC_layer = nn.Sequential(
             pt_utils.FC(1024, 512, bn=True),
@@ -68,15 +82,33 @@ class Pointnet2SSG(nn.Module):
             pt_utils.FC(256, num_classes, activation=None)
         )
 
-    def forward(self, xyz, points=None):
-        xyz = xyz.contiguous()
-        points = (
-            points.transpose(1, 2).contiguous() if points is not None else None
+    def _break_up_pc(self, pc):
+        xyz = pc[..., 0:3].contiguous()
+        features = (
+            pc[..., 3:].transpose(1, 2).contiguous()
+            if pc.size(-1) > 3 else None
         )
-        for module in self.SA_modules:
-            xyz, points = module(xyz, points)
 
-        return self.FC_layer(points.squeeze(-1))
+        return xyz, features
+
+    def forward(self, pointcloud: torch.cuda.FloatTensor):
+        r"""
+            Forward pass of the network
+
+            Parameters
+            ----------
+            pointcloud: Variable(torch.cuda.FloatTensor)
+                (B, N, 3 + input_channels) tensor
+                Point cloud to run predicts on
+                Each point in the point-cloud MUST
+                be formated as (x, y, z, features...)
+        """
+        xyz, features = self._break_up_pc(pointcloud)
+
+        for module in self.SA_modules:
+            xyz, features = module(xyz, features)
+
+        return self.FC_layer(features.squeeze(-1))
 
 
 if __name__ == "__main__":
@@ -93,8 +125,9 @@ if __name__ == "__main__":
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
 
+    print("testing with xyz")
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
-    for _ in range(20):
+    for _ in range(5):
         optimizer.zero_grad()
         _, loss, _ = model_fn(model, (inputs, labels))
         loss.backward()
@@ -102,15 +135,16 @@ if __name__ == "__main__":
         optimizer.step()
 
     # use_xyz=False
-    inputs = torch.randn(B, N, 3).cuda()
+    inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
     model = Pointnet2SSG(3, input_channels=3, use_xyz=False)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
 
+    print("Testing without xyz")
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
-    for _ in range(20):
+    for _ in range(5):
         optimizer.zero_grad()
         _, loss, _ = model_fn(model, (inputs, labels))
         loss.backward()

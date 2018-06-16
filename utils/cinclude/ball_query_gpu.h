@@ -1,16 +1,10 @@
 #ifndef _BALL_QUERY_GPU
 #define _BALL_QUERY_GPU
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <torch/torch.h>
 
-void query_ball_point_kernel_wrapper(int b, int n, int m, float radius,
-				     int nsample, const float *xyz,
-				     const float *new_xyz, int *idx,
-				     cudaStream_t stream);
+std::vector<at::Tensor> ball_query_cuda(float radius, int nsample,
+					at::Tensor xyz, at::Tensor new_xyz,
+					at::Tensor idx);
 
-#ifdef __cplusplus
-}
-#endif
 #endif

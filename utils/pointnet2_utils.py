@@ -8,7 +8,7 @@ from collections import namedtuple
 import pytorch_utils as pt_utils
 from typing import List, Tuple
 
-from _ext import pointnet2
+import pointnet
 
 
 class RandomDropout(nn.Module):
@@ -45,16 +45,9 @@ class FurthestPointSampling(Function):
         torch.Tensor
             (B, npoint) tensor containing the set
         """
-        assert xyz.is_contiguous()
+        output = torch.cuda.IntTensor(xyz.size(0), npoint)
 
-        B, N, _ = xyz.size()
-
-        output = torch.cuda.IntTensor(B, npoint)
-        temp = torch.cuda.FloatTensor(B, N).fill_(1e10)
-
-        pointnet2.furthest_point_sampling_wrapper(
-            B, N, npoint, xyz, temp, output
-        )
+        output, = pointnet.furthest_point_sampling(npoint, xyz, output)
 
         return output
 
@@ -85,15 +78,11 @@ class GatherPoints(Function):
         torch.Tensor
             (B, C, npoint) tensor
         """
-        assert points.is_contiguous()
-        assert idx.is_contiguous()
 
-        B, npoint = idx.size()
-        _, C, N = points.size()
+        B, C, N = points.size()
+        output = torch.cuda.FloatTensor(B, C, idx.size(1))
 
-        output = torch.cuda.FloatTensor(B, C, npoint)
-
-        pointnet2.gather_points_wrapper(B, C, N, npoint, points, idx, output)
+        output, = pointnet.gather_points(points, idx, output)
 
         ctx.for_backwards = (idx, C, N)
 
@@ -104,11 +93,9 @@ class GatherPoints(Function):
         idx, C, N = ctx.for_backwards
         B, npoint = idx.size()
 
-        grad_points = Variable(torch.cuda.FloatTensor(B, C, N).zero_())
-        grad_out_data = grad_out.data.contiguous()
-        pointnet2.gather_points_grad_wrapper(
-            B, C, N, npoint, grad_out_data, idx, grad_points.data
-        )
+        grad_points = torch.cuda.FloatTensor(B, C, N)
+        grad_points, = pointnet.gather_points_grad(grad_out, idx, grad_points)
+        print(grad_points)
 
         return grad_points, None
 
@@ -320,17 +307,8 @@ class BallQuery(Function):
         torch.Tensor
             (B, npoint, nsample) tensor with the indicies of the points that form the query balls
         """
-        assert new_xyz.is_contiguous()
-        assert xyz.is_contiguous()
-
-        B, N, _ = xyz.size()
-        npoint = new_xyz.size(1)
-        idx = torch.cuda.IntTensor(B, npoint, nsample).zero_()
-
-        pointnet2.ball_query_wrapper(
-            B, N, npoint, radius, nsample, new_xyz, xyz, idx
-        )
-
+        idx = torch.cuda.IntTensor(xyz.size(0), new_xyz.size(1), 3)
+        idx, = pointnet.ball_query(radius, nsample, xyz, new_xyz, idx)
         return idx
 
     @staticmethod
@@ -443,3 +421,10 @@ class GroupAll(nn.Module):
             new_points = grouped_xyz
 
         return new_points
+
+
+if __name__ == "__main__":
+    import numpy as np
+    xyz = Variable(torch.cuda.FloatTensor(16, 1024, 3).uniform_(), requires_grad=True)
+    tmp = furthest_point_sample(xyz, 5)
+    print(tmp)

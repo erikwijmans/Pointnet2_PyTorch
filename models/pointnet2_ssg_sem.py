@@ -104,8 +104,8 @@ if __name__ == "__main__":
     from torch.autograd import Variable
     import numpy as np
     import torch.optim as optim
-    B = 2
-    N = 32
+    B = 32
+    N = 8192
     inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3,
                                                 size=B * N)).view(B, N).cuda()

@@ -36,10 +36,12 @@ class _PointnetSAModuleBase(nn.Module):
         new_points_list = []
 
         xyz_flipped = xyz.transpose(1, 2).contiguous()
-        new_xyz = pointnet2_utils.gather_points(
-            xyz_flipped,
-            pointnet2_utils.furthest_point_sample(xyz, self.npoint)
-        ).transpose(1, 2).contiguous() if self.npoint is not None else None
+        if self.npoint is not None:
+            inds = pointnet2_utils.furthest_point_sample(xyz, self.npoint)
+            new_xyz = pointnet2_utils.gather_points(xyz_flipped, inds)
+            new_xyz = new_xyz.transpose(1, 2).contiguous()
+        else:
+            new_xyz = None
 
         for i in range(len(self.groupers)):
             new_points = self.groupers[i](

@@ -1,16 +1,20 @@
+#include <ATen/ATen.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ball_query_gpu.h"
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 #include "cuda_utils.h"
 
 // input: new_xyz(b, m, 3) xyz(b, n, 3)
 // output: idx(b, m, nsample)
+template <typename scalar_t>
 __global__ void query_ball_point_kernel(int b, int n, int m, float radius,
 					int nsample,
-					const float *__restrict__ new_xyz,
-					const float *__restrict__ xyz,
+					const scalar_t *__restrict__ new_xyz,
+					const scalar_t *__restrict__ xyz,
 					int *__restrict__ idx) {
     int batch_index = blockIdx.x;
     xyz += batch_index * n * 3;
@@ -44,18 +48,19 @@ __global__ void query_ball_point_kernel(int b, int n, int m, float radius,
     }
 }
 
-void query_ball_point_kernel_wrapper(int b, int n, int m, float radius,
-				     int nsample, const float *new_xyz,
-				     const float *xyz, int *idx,
-				     cudaStream_t stream) {
+std::vector<at::Tensor> ball_query_cuda(float radius, int nsample,
+					at::Tensor xyz, at::Tensor new_xyz,
+					at::Tensor idx) {
 
-    cudaError_t err;
-    query_ball_point_kernel<<<b, opt_n_threads(m), 0, stream>>>(
-	b, n, m, radius, nsample, new_xyz, xyz, idx);
+    cudaStream_t stream = at::globalContext().getCurrentCUDAStream();
+    AT_DISPATCH_FLOATING_TYPES(
+	xyz.type(), "ball_query_cuda", ([&] {
+	    query_ball_point_kernel<scalar_t>
+		<<<xyz.size(0), opt_n_threads(new_xyz.size(1)), 0, stream>>>(
+		    xyz.size(0), xyz.size(1), new_xyz.size(1), radius, nsample,
+		    new_xyz.data<scalar_t>(), xyz.data<scalar_t>(),
+		    idx.data<int>());
+	}));
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    return {idx};
 }

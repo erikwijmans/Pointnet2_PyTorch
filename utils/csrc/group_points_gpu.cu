@@ -1,16 +1,20 @@
+#include <ATen/ATen.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 #include "cuda_utils.h"
-#include "group_points_gpu.h"
 
 // input: points(b, c, n) idx(b, npoints, nsample)
 // output: out(b, c, npoints, nsample)
-__global__ void group_points_kernel(int b, int c, int n, int npoints,
-				    int nsample,
-				    const float *__restrict__ points,
-				    const int *__restrict__ idx,
-				    float *__restrict__ out) {
+template <typename scalar_t>
+__global__ void
+group_points_kernel(int b, int c, int n, int npoints, int nsample,
+		    const scalar_t *__restrict__ points,
+		    const int *__restrict__ idx, scalar_t *__restrict__ out) {
     int batch_index = blockIdx.x;
     points += batch_index * n * c;
     idx += batch_index * npoints * nsample;
@@ -28,28 +32,33 @@ __global__ void group_points_kernel(int b, int c, int n, int npoints,
     }
 }
 
-void group_points_kernel_wrapper(int b, int c, int n, int npoints, int nsample,
-				 const float *points, const int *idx,
-				 float *out, cudaStream_t stream) {
+std::vector<at::Tensor> group_points_cuda(at::Tensor points, at::Tensor idx,
+					  at::Tensor output) {
+    const int b = points.size(0);
+    const int c = points.size(1);
+    const int n = points.size(2);
+    const int npoints = idx.size(1);
+    const int nsample = idx.size(1);
 
-    cudaError_t err;
-    group_points_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
-	b, c, n, npoints, nsample, points, idx, out);
+    cudaStream_t stream = at::globalContext().getCurrentCUDAStream();
+    AT_DISPATCH_FLOATING_TYPES(
+	points.type(), "group_points_cuda", ([&] {
+	    group_points_kernel<scalar_t><<<b, opt_block_config(npoints, c), 0, stream>>>(
+		b, c, n, npoints, nsample, points.data<scalar_t>(),
+		idx.data<int>(), output.data<scalar_t>());
+	}));
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    return {output};
 }
 
 // input: grad_out(b, c, npoints, nsample), idx(b, npoints, nsample)
 // output: grad_points(b, c, n)
+template <typename scalar_t>
 __global__ void group_points_grad_kernel(int b, int c, int n, int npoints,
 					 int nsample,
-					 const float *__restrict__ grad_out,
+					 const scalar_t *__restrict__ grad_out,
 					 const int *__restrict__ idx,
-					 float *__restrict__ grad_points) {
+					 scalar_t *__restrict__ grad_points) {
     int batch_index = blockIdx.x;
     grad_out += batch_index * npoints * nsample * c;
     idx += batch_index * npoints * nsample;
@@ -68,17 +77,20 @@ __global__ void group_points_grad_kernel(int b, int c, int n, int npoints,
     }
 }
 
-void group_points_grad_kernel_wrapper(int b, int c, int n, int npoints,
-				      int nsample, const float *grad_out,
-				      const int *idx, float *grad_points,
-				      cudaStream_t stream) {
-    cudaError_t err;
-    group_points_grad_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
-	b, c, n, npoints, nsample, grad_out, idx, grad_points);
+std::vector<at::Tensor> group_points_grad_cuda(at::Tensor grad_out,
+					       at::Tensor idx,
+					       at::Tensor grad_points) {
+    const int b = grad_points.size(0);
+    const int c = grad_points.size(1);
+    const int n = grad_points.size(2);
+    const int npoints = idx.size(1);
+    const int nsample = idx.size(1);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    cudaStream_t stream = at::globalContext().getCurrentCUDAStream();
+    group_points_grad_kernel<float>
+	<<<b, opt_block_config(npoints, c), 0, stream>>>(
+	    b, c, n, npoints, nsample, grad_out.data<float>(), idx.data<int>(),
+	    grad_points.data<float>());
+
+    return {grad_points};
 }

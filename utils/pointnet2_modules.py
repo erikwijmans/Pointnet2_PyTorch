@@ -16,47 +16,47 @@ class _PointnetSAModuleBase(nn.Module):
         self.mlps = None
 
     def forward(self, xyz: torch.Tensor,
-                points: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
+                features: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
         r"""
         Parameters
         ----------
         xyz : torch.Tensor
-            (B, N, 3) tensor of the xyz coordinates of the points
-        points : torch.Tensor
-            (B, N, C) tensor of the descriptors of the the points
+            (B, N, 3) tensor of the xyz coordinates of the features
+        features : torch.Tensor
+            (B, N, C) tensor of the descriptors of the the features
 
         Returns
         -------
         new_xyz : torch.Tensor
-            (B, npoint, 3) tensor of the new points' xyz
-        new_points : torch.Tensor
-            (B, npoint, \sum_k(mlps[k][-1])) tensor of the new_points descriptors
+            (B, npoint, 3) tensor of the new features' xyz
+        new_features : torch.Tensor
+            (B, npoint, \sum_k(mlps[k][-1])) tensor of the new_features descriptors
         """
 
-        new_points_list = []
+        new_features_list = []
 
         xyz_flipped = xyz.transpose(1, 2).contiguous()
-        new_xyz = pointnet2_utils.gather_points(
+        new_xyz = pointnet2_utils.gather_operation(
             xyz_flipped,
             pointnet2_utils.furthest_point_sample(xyz, self.npoint)
         ).transpose(1, 2).contiguous() if self.npoint is not None else None
 
         for i in range(len(self.groupers)):
-            new_points = self.groupers[i](
-                xyz, new_xyz, points
+            new_features = self.groupers[i](
+                xyz, new_xyz, features
             )  # (B, C, npoint, nsample)
 
-            new_points = self.mlps[i](
-                new_points
+            new_features = self.mlps[i](
+                new_features
             )  # (B, mlp[-1], npoint, nsample)
-            new_points = F.max_pool2d(
-                new_points, kernel_size=[1, new_points.size(3)]
+            new_features = F.max_pool2d(
+                new_features, kernel_size=[1, new_features.size(3)]
             )  # (B, mlp[-1], npoint, 1)
-            new_points = new_points.squeeze(-1)  # (B, mlp[-1], npoint)
+            new_features = new_features.squeeze(-1)  # (B, mlp[-1], npoint)
 
-            new_points_list.append(new_points)
+            new_features_list.append(new_features)
 
-        return new_xyz, torch.cat(new_points_list, dim=1)
+        return new_xyz, torch.cat(new_features_list, dim=1)
 
 
 class PointnetSAModuleMSG(_PointnetSAModuleBase):
@@ -65,7 +65,7 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
     Parameters
     ----------
     npoint : int
-        Number of points
+        Number of features
     radii : list of float32
         list of radii to group with
     nsamples : list of int32
@@ -98,6 +98,7 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
             nsample = nsamples[i]
             self.groupers.append(
                 pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz)
+                if npoint is not None else pointnet2_utils.GroupAll(use_xyz)
             )
             mlp_spec = mlps[i]
             if use_xyz:
@@ -106,13 +107,13 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
             self.mlps.append(pt_utils.SharedMLP(mlp_spec, bn=bn))
 
 
-class PointnetSAModule(_PointnetSAModuleBase):
+class PointnetSAModule(PointnetSAModuleMSG):
     r"""Pointnet set abstrction layer
 
     Parameters
     ----------
     npoint : int
-        Number of points
+        Number of features
     radius : float
         Radius of ball
     nsample : int
@@ -133,24 +134,14 @@ class PointnetSAModule(_PointnetSAModuleBase):
             bn: bool = True,
             use_xyz: bool = True
     ):
-        super().__init__()
-        self.npoint = npoint
-        self.groupers = nn.ModuleList()
-        self.mlps = nn.ModuleList()
-
-        if self.npoint is not None:
-            assert radius is not None
-            assert nsample is not None
-            self.groupers.append(
-                pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz)
-            )
-        else:
-            self.groupers.append(pointnet2_utils.GroupAll(use_xyz=use_xyz))
-
-        if use_xyz:
-            mlp[0] += 3
-
-        self.mlps.append(pt_utils.SharedMLP(mlp, bn=bn))
+        super().__init__(
+            mlps=[mlp],
+            npoint=npoint,
+            radii=[radius],
+            nsamples=[nsample],
+            bn=bn,
+            use_xyz=use_xyz
+        )
 
 
 class PointnetFPModule(nn.Module):
@@ -176,9 +167,9 @@ class PointnetFPModule(nn.Module):
         Parameters
         ----------
         unknown : torch.Tensor
-            (B, n, 3) tensor of the xyz positions of the unknown points
+            (B, n, 3) tensor of the xyz positions of the unknown features
         known : torch.Tensor
-            (B, m, 3) tensor of the xyz positions of the known points
+            (B, m, 3) tensor of the xyz positions of the known features
         unknow_feats : torch.Tensor
             (B, C1, n) tensor of the features to be propigated to
         known_feats : torch.Tensor
@@ -186,8 +177,8 @@ class PointnetFPModule(nn.Module):
 
         Returns
         -------
-        new_points : torch.Tensor
-            (B, mlp[-1], n) tensor of the features of the unknown points
+        new_features : torch.Tensor
+            (B, mlp[-1], n) tensor of the features of the unknown features
         """
 
         dist, idx = pointnet2_utils.three_nn(unknown, known)
@@ -199,15 +190,15 @@ class PointnetFPModule(nn.Module):
             known_feats, idx, weight
         )
         if unknow_feats is not None:
-            new_points = torch.cat([interpolated_feats, unknow_feats],
-                                   dim=1)  #(B, C2 + C1, n)
+            new_features = torch.cat([interpolated_feats, unknow_feats],
+                                     dim=1)  #(B, C2 + C1, n)
         else:
-            new_points = interpolated_feats
+            new_features = interpolated_feats
 
-        new_points = new_points.unsqueeze(-1)
-        new_points = self.mlp(new_points)
+        new_features = new_features.unsqueeze(-1)
+        new_features = self.mlp(new_features)
 
-        return new_points.squeeze(-1)
+        return new_features.squeeze(-1)
 
 
 if __name__ == "__main__":
@@ -231,7 +222,9 @@ if __name__ == "__main__":
     #  print(test)
 
     for _ in range(1):
-        _, new_points = test_module(xyz, xyz_feats)
-        new_points.backward(torch.cuda.FloatTensor(*new_points.size()).fill_(1))
-        print(new_points)
+        _, new_features = test_module(xyz, xyz_feats)
+        new_features.backward(
+            torch.cuda.FloatTensor(*new_features.size()).fill_(1)
+        )
+        print(new_features)
         print(xyz.grad)

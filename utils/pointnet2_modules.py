@@ -181,19 +181,29 @@ class PointnetFPModule(nn.Module):
             (B, mlp[-1], n) tensor of the features of the unknown features
         """
 
-        dist, idx = pointnet2_utils.three_nn(unknown, known)
-        dist_recip = 1.0 / (dist + 1e-8)
-        norm = torch.sum(dist_recip, dim=2, keepdim=True)
-        weight = dist_recip / norm
+        if known is not None:
+            dist, idx = pointnet2_utils.three_nn(unknown, known)
+            dist_recip = 1.0 / (dist + 1e-8)
+            norm = torch.sum(dist_recip, dim=2, keepdim=True)
+            weight = dist_recip / norm
 
-        interpolated_feats = pointnet2_utils.three_interpolate(
-            known_feats, idx, weight
-        )
-        if unknow_feats is not None:
-            new_features = torch.cat([interpolated_feats, unknow_feats],
-                                     dim=1)  #(B, C2 + C1, n)
+            interpolated_feats = pointnet2_utils.three_interpolate(
+                known_feats, idx, weight
+            )
+            if unknow_feats is not None:
+                new_points = torch.cat([interpolated_feats, unknow_feats],
+                                       dim=1)  #(B, C2 + C1, n)
+            else:
+                new_points = interpolated_feats
         else:
-            new_features = interpolated_feats
+            interpolated_feats = known_feats.expand(
+                    *known_feats.size()[0:2], unknown.size(1)
+            )
+            if unknow_feats is not None:
+                new_points = torch.cat([interpolated_feats, unknow_feats],
+                                       dim=1)  #(B, C2 + C1, n)
+            else:
+                new_points = interpolated_feats
 
         new_features = new_features.unsqueeze(-1)
         new_features = self.mlp(new_features)

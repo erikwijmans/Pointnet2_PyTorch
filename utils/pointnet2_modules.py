@@ -196,10 +196,10 @@ class PointnetFPModule(nn.Module):
             )
 
         if unknow_feats is not None:
-            new_points = torch.cat([interpolated_feats, unknow_feats],
+            new_features = torch.cat([interpolated_feats, unknow_feats],
                                    dim=1)  #(B, C2 + C1, n)
         else:
-            new_points = interpolated_feats
+            new_features = interpolated_feats
 
         new_features = new_features.unsqueeze(-1)
         new_features = self.mlp(new_features)

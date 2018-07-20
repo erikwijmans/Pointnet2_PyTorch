@@ -154,6 +154,7 @@ if __name__ == "__main__":
     )
 
     trainer.train(
+        0,
         start_epoch,
         args.epochs,
         train_loader,

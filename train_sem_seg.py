@@ -140,11 +140,11 @@ if __name__ == "__main__":
         checkpoint_name="sem_seg_checkpoint",
         best_name="sem_seg_best",
         lr_scheduler=lr_scheduler,
-        bnm_scheduler=bnm_scheduler,
-        eval_frequency=10
+        bnm_scheduler=bnm_scheduler
     )
 
     trainer.train(
+        0,
         start_epoch,
         args.epochs,
         train_loader,

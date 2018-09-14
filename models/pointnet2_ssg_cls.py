@@ -16,18 +16,24 @@ def model_fn_decorator(criterion):
     ModelReturn = namedtuple("ModelReturn", ['preds', 'loss', 'acc'])
 
     def model_fn(model, data, epoch=0, eval=False):
-        inputs, labels = data
-        inputs = Variable(inputs.cuda(async=True), volatile=eval)
-        labels = Variable(labels.cuda(async=True), volatile=eval)
+        with torch.set_grad_enabled(not eval):
+            inputs, labels = data
+            inputs = inputs.cuda(async=True)
+            labels = labels.cuda(async=True)
 
-        preds = model(inputs)
-        labels = labels.view(-1)
-        loss = criterion(preds, labels)
+            preds = model(inputs)
+            labels = labels.view(-1)
+            loss = criterion(preds, labels)
 
-        _, classes = torch.max(preds.data, -1)
-        acc = (classes == labels.data).sum() / labels.numel()
+            _, classes = torch.max(preds, -1)
+            acc = (classes == labels).float().sum() / labels.numel()
 
-        return ModelReturn(preds, loss, {"acc": acc})
+            return ModelReturn(
+                preds, loss, {
+                    "acc": acc.item(),
+                    'loss': loss.item()
+                }
+            )
 
     return model_fn
 

@@ -7,7 +7,6 @@ from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torchvision import transforms
 import os
-import tensorboard_logger as tb_log
 
 from models import Pointnet2ClsMSG as Pointnet
 from models.pointnet2_msg_cls import model_fn_decorator
@@ -25,11 +24,11 @@ def parse_args():
         description="Arguments for cls training",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("-batch_size", type=int, default=16, help="Batch size")
+    parser.add_argument("-batch_size", type=int, default=32, help="Batch size")
     parser.add_argument(
         "-num_points",
         type=int,
-        default=1024,
+        default=4096,
         help="Number of points to train with"
     )
     parser.add_argument(
@@ -71,6 +70,7 @@ def parse_args():
         default="cls_run_1",
         help="Name for run in tensorboard_logger"
     )
+    parser.add_argument('--visdom-port', type=int, default=8097)
 
     return parser.parse_args()
 
@@ -113,7 +113,6 @@ if __name__ == "__main__":
         pin_memory=True
     )
 
-    tb_log.configure('runs/{}'.format(args.run_name))
 
     model = Pointnet(input_channels=0, num_classes=40, use_xyz=True)
     model.cuda()
@@ -143,14 +142,18 @@ if __name__ == "__main__":
 
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
 
+    viz = pt_utils.VisdomViz(port=args.visdom_port)
+    viz.text(str(vars(args)))
+
     trainer = pt_utils.Trainer(
         model,
         model_fn,
         optimizer,
-        checkpoint_name="checkpoints/single_layer",
-        best_name="checkpoints/single_layer_best",
+        checkpoint_name="checkpoints/pointnet2_cls",
+        best_name="checkpoints/pointnet2_cls_best",
         lr_scheduler=lr_scheduler,
-        bnm_scheduler=bnm_scheduler
+        bnm_scheduler=bnm_scheduler,
+        viz=viz
     )
 
     trainer.train(
@@ -163,4 +166,4 @@ if __name__ == "__main__":
     )
 
     if start_epoch == args.epochs:
-        _ = trainer.eval_epoch(start_epoch, test_loader)
+        _ = trainer.eval_epoch(test_loader)

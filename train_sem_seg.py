@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
 import numpy as np
-import tensorboard_logger as tb_log
 import os
 
 from models import Pointnet2SemMSG as Pointnet
@@ -23,7 +22,7 @@ parser.add_argument(
 parser.add_argument(
     "-num_points",
     type=int,
-    default=2048,
+    default=4096,
     help="Number of points to train with [default: 2048]"
 )
 parser.add_argument(
@@ -74,6 +73,7 @@ parser.add_argument(
     default="sem_seg_run_1",
     help="Name for run in tensorboard_logger"
 )
+parser.add_argument('--visdom-port', type=int, default=8097)
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
@@ -82,11 +82,8 @@ bnm_clip = 1e-2
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    tb_log.configure('runs/{}'.format(args.run_name))
 
-    test_set = Indoor3DSemSeg(
-        args.num_points, BASE_DIR, train=False, data_precent=0.01
-    )
+    test_set = Indoor3DSemSeg(args.num_points, BASE_DIR, train=False)
     test_loader = DataLoader(
         test_set,
         batch_size=args.batch_size,
@@ -95,7 +92,7 @@ if __name__ == "__main__":
         num_workers=2
     )
 
-    train_set = Indoor3DSemSeg(args.num_points, BASE_DIR, data_precent=1.0)
+    train_set = Indoor3DSemSeg(args.num_points, BASE_DIR)
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,
@@ -104,7 +101,7 @@ if __name__ == "__main__":
         shuffle=True
     )
 
-    model = Pointnet(num_classes=13, use_xyz=True)
+    model = Pointnet(num_classes=13, input_channels=6, use_xyz=True)
     model.cuda()
     optimizer = optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay
@@ -133,14 +130,18 @@ if __name__ == "__main__":
 
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
 
+    viz = pt_utils.VisdomViz(port=args.visdom_port)
+    viz.text(str(vars(args)))
+
     trainer = pt_utils.Trainer(
         model,
         model_fn,
         optimizer,
-        checkpoint_name="sem_seg_checkpoint",
-        best_name="sem_seg_best",
+        checkpoint_name="checkpoints/pointnet2_smeseg",
+        best_name="checkpoints/poitnet2_semseg_best",
         lr_scheduler=lr_scheduler,
-        bnm_scheduler=bnm_scheduler
+        bnm_scheduler=bnm_scheduler,
+        viz=viz
     )
 
     trainer.train(
@@ -153,5 +154,4 @@ if __name__ == "__main__":
     )
 
     if start_epoch == args.epochs:
-        test_loader.dataset.data_precent = 1.0
-        _ = trainer.eval_epoch(start_epoch, test_loader)
+        _ = trainer.eval_epoch(test_loader)

@@ -45,8 +45,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "-decay_step",
-    type=int,
-    default=20,
+    type=float,
+    default=2e4,
     help="Learning rate decay step [default: 20]"
 )
 parser.add_argument(
@@ -107,8 +107,8 @@ if __name__ == "__main__":
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay
     )
 
-    lr_lbmd = lambda e: max(args.lr_decay**(e // args.decay_step), lr_clip / args.lr)
-    bnm_lmbd = lambda e: max(args.bn_momentum * args.bn_decay**(e // args.decay_step), bnm_clip)
+    lr_lbmd = lambda e: max(args.lr_decay**(int(it / args.decay_step)), lr_clip / args.lr)
+    bnm_lmbd = lambda e: max(args.bn_momentum * args.bn_decay**(int(it / args.decay_step)), bnm_clip)
 
     if args.checkpoint is None:
         lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lbmd)

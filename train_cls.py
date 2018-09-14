@@ -44,7 +44,7 @@ def parse_args():
         "-lr_decay", type=float, default=0.7, help="Learning rate decay gamma"
     )
     parser.add_argument(
-        "-decay_step", type=int, default=20, help="Learning rate decay step"
+        "-decay_step", type=float, default=2e4, help="Learning rate decay step"
     )
     parser.add_argument(
         "-bn_momentum",
@@ -113,14 +113,13 @@ if __name__ == "__main__":
         pin_memory=True
     )
 
-
     model = Pointnet(input_channels=0, num_classes=40, use_xyz=True)
     model.cuda()
     optimizer = optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay
     )
-    lr_lbmd = lambda e: max(args.lr_decay**(e // args.decay_step), lr_clip / args.lr)
-    bn_lbmd = lambda e: max(args.bn_momentum * args.bnm_decay**(e // args.decay_step), bnm_clip)
+    lr_lbmd = lambda it: max(args.lr_decay**(int(it / args.decay_step)), lr_clip / args.lr)
+    bn_lbmd = lambda it: max(args.bn_momentum * args.bnm_decay**(int(it / args.decay_step)), bnm_clip)
 
     if args.checkpoint is not None:
         start_epoch, best_loss = pt_utils.load_checkpoint(

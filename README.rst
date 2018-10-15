@@ -1,9 +1,9 @@
-Pointnet2 PyTorch
+Pointnet2/Pointnet++ PyTorch
 =================
 
-Partial implemention of `Pointnet2 <https://github.com/charlesq34/pointnet2>`_ written in `PyTorch <http://pytorch.org>`_.
+Implemention of `Pointnet2/Pointnet++ <https://github.com/charlesq34/pointnet2>`_ written in `PyTorch <http://pytorch.org>`_.
 
-The custom ops used by Pointnet2 are currently **ONLY** supported on the GPU using CUDA.
+The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU using CUDA.
 
 Building CUDA kernels
 ---------------------

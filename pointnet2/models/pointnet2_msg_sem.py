@@ -1,14 +1,9 @@
-import os, sys
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(BASE_DIR)
-sys.path.append(os.path.join(BASE_DIR, "../utils"))
-
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-import pytorch_utils as pt_utils
-from pointnet2_modules import PointnetSAModule, PointnetFPModule, PointnetSAModuleMSG
-from pointnet2_utils import RandomDropout
+from pointnet2.utils import pytorch_utils as pt_utils
+from pointnet2.utils.pointnet2_modules import (
+    PointnetSAModule, PointnetFPModule, PointnetSAModuleMSG
+)
 from collections import namedtuple
 
 
@@ -18,8 +13,8 @@ def model_fn_decorator(criterion):
     def model_fn(model, data, epoch=0, eval=False):
         with torch.set_grad_enabled(not eval):
             inputs, labels = data
-            inputs = inputs.cuda(async=True)
-            labels = labels.cuda(async=True)
+            inputs = inputs.to('cuda', non_blocking=True)
+            labels = labels.to('cuda', non_blocking=True)
 
             preds = model(inputs)
             loss = criterion(preds.view(labels.numel(), -1), labels.view(-1))
@@ -27,19 +22,19 @@ def model_fn_decorator(criterion):
             _, classes = torch.max(preds, -1)
             acc = (classes == labels).float().sum() / labels.numel()
 
-            return ModelReturn(
-                preds, loss, {
-                    "acc": acc.item(),
-                    'loss': loss.item()
-                }
-            )
+        return ModelReturn(
+            preds, loss, {
+                "acc": acc.item(),
+                'loss': loss.item()
+            }
+        )
 
     return model_fn
 
 
-class Pointnet2SSG(nn.Module):
+class Pointnet2MSG(nn.Module):
     r"""
-        PointNet2 with single-scale grouping
+        PointNet2 with multi-scale grouping
         Semantic segmentation network that uses feature propogation layers
 
         Parameters
@@ -53,54 +48,67 @@ class Pointnet2SSG(nn.Module):
             Whether or not to use the xyz position of a point as a feature
     """
 
-    def __init__(self, num_classes, input_channels=3, use_xyz=True):
+    def __init__(self, num_classes, input_channels=6, use_xyz=True):
         super().__init__()
 
         self.SA_modules = nn.ModuleList()
+        c_in = input_channels
         self.SA_modules.append(
-            PointnetSAModule(
+            PointnetSAModuleMSG(
                 npoint=1024,
-                radius=0.1,
-                nsample=32,
-                mlp=[input_channels, 32, 32, 64],
+                radii=[0.05, 0.1],
+                nsamples=[16, 32],
+                mlps=[[c_in, 16, 16, 32], [c_in, 32, 32, 64]],
                 use_xyz=use_xyz
             )
         )
+        c_out_0 = 32 + 64
+
+        c_in = c_out_0
         self.SA_modules.append(
-            PointnetSAModule(
+            PointnetSAModuleMSG(
                 npoint=256,
-                radius=0.2,
-                nsample=32,
-                mlp=[64, 64, 64, 128],
+                radii=[0.1, 0.2],
+                nsamples=[16, 32],
+                mlps=[[c_in, 64, 64, 128], [c_in, 64, 96, 128]],
                 use_xyz=use_xyz
             )
         )
+        c_out_1 = 128 + 128
+
+        c_in = c_out_1
         self.SA_modules.append(
-            PointnetSAModule(
+            PointnetSAModuleMSG(
                 npoint=64,
-                radius=0.4,
-                nsample=32,
-                mlp=[128, 128, 128, 256],
+                radii=[0.2, 0.4],
+                nsamples=[16, 32],
+                mlps=[[c_in, 128, 196, 256], [c_in, 128, 196, 256]],
                 use_xyz=use_xyz
             )
         )
+        c_out_2 = 256 + 256
+
+        c_in = c_out_2
         self.SA_modules.append(
-            PointnetSAModule(
+            PointnetSAModuleMSG(
                 npoint=16,
-                radius=0.8,
-                nsample=32,
-                mlp=[256, 256, 256, 512],
+                radii=[0.4, 0.8],
+                nsamples=[16, 32],
+                mlps=[[c_in, 256, 256, 512], [c_in, 256, 384, 512]],
                 use_xyz=use_xyz
             )
         )
+        c_out_3 = 512 + 512
 
         self.FP_modules = nn.ModuleList()
         self.FP_modules.append(
-            PointnetFPModule(mlp=[128 + input_channels, 128, 128, 128])
+            PointnetFPModule(mlp=[256 + input_channels, 128, 128])
         )
-        self.FP_modules.append(PointnetFPModule(mlp=[256 + 64, 256, 128]))
-        self.FP_modules.append(PointnetFPModule(mlp=[256 + 128, 256, 256]))
-        self.FP_modules.append(PointnetFPModule(mlp=[512 + 256, 256, 256]))
+        self.FP_modules.append(PointnetFPModule(mlp=[512 + c_out_0, 256, 256]))
+        self.FP_modules.append(PointnetFPModule(mlp=[512 + c_out_1, 512, 512]))
+        self.FP_modules.append(
+            PointnetFPModule(mlp=[c_out_3 + c_out_2, 512, 512])
+        )
 
         self.FC_layer = nn.Sequential(
             pt_utils.Conv1d(128, 128, bn=True), nn.Dropout(),
@@ -153,7 +161,7 @@ if __name__ == "__main__":
     inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3,
                                                 size=B * N)).view(B, N).cuda()
-    model = Pointnet2SSG(3, input_channels=3)
+    model = Pointnet2MSG(3, input_channels=3)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
@@ -167,11 +175,11 @@ if __name__ == "__main__":
         print(loss.data[0])
         optimizer.step()
 
-    # try with use_xyz=False too
+    # with use_xyz=False
     inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3,
                                                 size=B * N)).view(B, N).cuda()
-    model = Pointnet2SSG(3, input_channels=3, use_xyz=False)
+    model = Pointnet2MSG(3, input_channels=3, use_xyz=False)
     model.cuda()
 
     optimizer = optim.Adam(model.parameters(), lr=1e-2)

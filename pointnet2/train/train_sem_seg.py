@@ -8,10 +8,10 @@ from torch.autograd import Variable
 import numpy as np
 import os
 
-from models import Pointnet2SemMSG as Pointnet
-from models.pointnet2_msg_sem import model_fn_decorator
-from data import Indoor3DSemSeg
-import utils.pytorch_utils as pt_utils
+from pointnet2.models import Pointnet2SemMSG as Pointnet
+from pointnet2.models.pointnet2_msg_sem import model_fn_decorator
+from pointnet2.data import Indoor3DSemSeg
+import pointnet2.utils.pytorch_utils as pt_utils
 
 import argparse
 
@@ -75,7 +75,6 @@ parser.add_argument(
 )
 parser.add_argument('--visdom-port', type=int, default=8097)
 
-BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 lr_clip = 1e-5
 bnm_clip = 1e-2
@@ -83,7 +82,7 @@ bnm_clip = 1e-2
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    test_set = Indoor3DSemSeg(args.num_points, BASE_DIR, train=False)
+    test_set = Indoor3DSemSeg(args.num_points, train=False)
     test_loader = DataLoader(
         test_set,
         batch_size=args.batch_size,
@@ -92,7 +91,7 @@ if __name__ == "__main__":
         num_workers=2
     )
 
-    train_set = Indoor3DSemSeg(args.num_points, BASE_DIR)
+    train_set = Indoor3DSemSeg(args.num_points)
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,

@@ -3,12 +3,11 @@ from torch.autograd import Variable
 from torch.autograd import Function
 import torch.nn.functional as F
 import torch.nn as nn
-from linalg_utils import pdist2, PDist2Order
 from collections import namedtuple
-import pytorch_utils as pt_utils
+from pointnet2.utils import pytorch_utils as pt_utils
 from typing import List, Tuple
 
-from _ext import pointnet2
+from pointnet2.utils._ext import pointnet2
 
 
 class RandomDropout(nn.Module):

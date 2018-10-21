@@ -3,16 +3,17 @@ cmake_minimum_required(VERSION 3.5)
 
 find_package(CUDA REQUIRED)
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/utils/cinclude")
-cuda_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/utils/cinclude")
-file(GLOB cuda_kernels_src "${CMAKE_CURRENT_SOURCE_DIR}/utils/csrc/*.cu")
+set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pointnet2/utils")
+include_directories("${SOURCE_DIR}/cinclude")
+cuda_include_directories("${SOURCE_DIR}/cinclude")
+file(GLOB cuda_kernels_src "${SOURCE_DIR}/csrc/*.cu")
 cuda_compile(cuda_kernels SHARED ${cuda_kernels_src} OPTIONS -O3)
 
-set(BUILD_CMD python "${CMAKE_CURRENT_SOURCE_DIR}/utils/build_ffi.py")
-file(GLOB wrapper_headers "${CMAKE_CURRENT_SOURCE_DIR}/utils/cinclude/*wrapper.h")
-file(GLOB wrapper_sources "${CMAKE_CURRENT_SOURCE_DIR}/utils/csrs/*.c")
-add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/utils/_ext/pointnet2/_pointnet2.so"
-		   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/utils
+set(BUILD_CMD python "${SOURCE_DIR}/build_ffi.py")
+file(GLOB wrapper_headers "${SOURCE_DIR}/cinclude/*wrapper.h")
+file(GLOB wrapper_sources "${SOURCE_DIR}/csrs/*.c")
+add_custom_command(OUTPUT "${SOURCE_DIR}/_ext/pointnet2/_pointnet2.so"
+		   WORKING_DIRECTORY ${SOURCE_DIR}
 		   COMMAND ${BUILD_CMD} --build --objs ${cuda_kernels}
 		   DEPENDS ${cuda_kernels}
 		   DEPENDS ${wrapper_headers}
@@ -20,5 +21,5 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/utils/_ext/pointnet2/_poi
 		   VERBATIM)
 
 add_custom_target(pointnet2_ext ALL
-		  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/utils/_ext/pointnet2/_pointnet2.so")
+		  DEPENDS "${SOURCE_DIR}/_ext/pointnet2/_pointnet2.so")
 

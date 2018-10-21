@@ -2,6 +2,7 @@ import torch
 import torch.utils.data as data
 import numpy as np
 import os, sys, h5py, subprocess, shlex
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def _get_data_files(list_filename):
@@ -18,24 +19,21 @@ def _load_data_file(name):
 
 class Indoor3DSemSeg(data.Dataset):
 
-    def __init__(
-            self, num_points, root, train=True, download=True, data_precent=1.0
-    ):
+    def __init__(self, num_points, train=True, download=True, data_precent=1.0):
         super().__init__()
         self.data_precent = data_precent
-        root = os.path.abspath(root)
         self.folder = "indoor3d_sem_seg_hdf5_data"
-        self.data_dir = os.path.join(root, self.folder)
+        self.data_dir = os.path.join(BASE_DIR, self.folder)
         self.url = "https://shapenet.cs.stanford.edu/media/indoor3d_sem_seg_hdf5_data.zip"
 
         if download and not os.path.exists(self.data_dir):
-            zipfile = os.path.join(root, os.path.basename(self.url))
+            zipfile = os.path.join(BASE_DIR, os.path.basename(self.url))
             subprocess.check_call(
                 shlex.split("curl {} -o {}".format(self.url, zipfile))
             )
 
             subprocess.check_call(
-                shlex.split("unzip {} -d {}".format(zipfile, root))
+                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR))
             )
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
@@ -51,7 +49,7 @@ class Indoor3DSemSeg(data.Dataset):
 
         data_batchlist, label_batchlist = [], []
         for f in all_files:
-            d, l = _load_data_file(os.path.join(root, f))
+            d, l = _load_data_file(os.path.join(BASE_DIR, f))
             data_batchlist.append(d)
             label_batchlist.append(l)
 

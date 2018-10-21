@@ -4,7 +4,6 @@ import numpy as np
 import os, sys, h5py, subprocess, shlex
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(BASE_DIR)
 
 
 def _get_data_files(list_filename):
@@ -21,26 +20,23 @@ def _load_data_file(name):
 
 class ModelNet40Cls(data.Dataset):
 
-    def __init__(
-            self, num_points, root, transforms=None, train=True, download=True
-    ):
+    def __init__(self, num_points, transforms=None, train=True, download=True):
         super().__init__()
 
         self.transforms = transforms
 
-        root = os.path.abspath(root)
         self.folder = "modelnet40_ply_hdf5_2048"
-        self.data_dir = os.path.join(root, self.folder)
+        self.data_dir = os.path.join(BASE_DIR, self.folder)
         self.url = "https://shapenet.cs.stanford.edu/media/modelnet40_ply_hdf5_2048.zip"
 
         if download and not os.path.exists(self.data_dir):
-            zipfile = os.path.join(root, os.path.basename(self.url))
+            zipfile = os.path.join(BASE_DIR, os.path.basename(self.url))
             subprocess.check_call(
                 shlex.split("curl {} -o {}".format(self.url, zipfile))
             )
 
             subprocess.check_call(
-                shlex.split("unzip {} -d {}".format(zipfile, root))
+                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR))
             )
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
@@ -55,7 +51,7 @@ class ModelNet40Cls(data.Dataset):
 
         point_list, label_list = [], []
         for f in self.files:
-            points, labels = _load_data_file(os.path.join(root, f))
+            points, labels = _load_data_file(os.path.join(BASE_DIR, f))
             point_list.append(points)
             label_list.append(labels)
 
@@ -98,7 +94,7 @@ if __name__ == "__main__":
 
     transforms = transforms.Compose([
         d_utils.PointcloudToTensor(),
-        d_utils.PointcloudRotate(axis=np.array([1,0,0])),
+        d_utils.PointcloudRotate(axis=np.array([1, 0, 0])),
         d_utils.PointcloudScale(),
         d_utils.PointcloudTranslate(),
         d_utils.PointcloudJitter()

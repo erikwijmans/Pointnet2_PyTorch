@@ -8,11 +8,11 @@ from torch.autograd import Variable
 from torchvision import transforms
 import os
 
-from models import Pointnet2ClsMSG as Pointnet
-from models.pointnet2_msg_cls import model_fn_decorator
-from data import ModelNet40Cls
-import utils.pytorch_utils as pt_utils
-import data.data_utils as d_utils
+from pointnet2.models import Pointnet2ClsMSG as Pointnet
+from pointnet2.models.pointnet2_msg_cls import model_fn_decorator
+from pointnet2.data import ModelNet40Cls
+import pointnet2.utils.pytorch_utils as pt_utils
+import pointnet2.data.data_utils as d_utils
 import argparse
 
 torch.backends.cudnn.enabled = True
@@ -24,7 +24,7 @@ def parse_args():
         description="Arguments for cls training",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("-batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("-batch_size", type=int, default=16, help="Batch size")
     parser.add_argument(
         "-num_points",
         type=int,
@@ -81,8 +81,6 @@ bnm_clip = 1e-2
 if __name__ == "__main__":
     args = parse_args()
 
-    BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-
     transforms = transforms.Compose([
         d_utils.PointcloudToTensor(),
         d_utils.PointcloudScale(),
@@ -94,7 +92,7 @@ if __name__ == "__main__":
     ])
 
     test_set = ModelNet40Cls(
-        args.num_points, BASE_DIR, transforms=transforms, train=False
+        args.num_points, transforms=transforms, train=False
     )
     test_loader = DataLoader(
         test_set,
@@ -104,7 +102,7 @@ if __name__ == "__main__":
         pin_memory=True
     )
 
-    train_set = ModelNet40Cls(args.num_points, BASE_DIR, transforms=transforms)
+    train_set = ModelNet40Cls(args.num_points, transforms=transforms)
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,

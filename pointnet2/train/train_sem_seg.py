@@ -4,7 +4,6 @@ import torch.optim.lr_scheduler as lr_sched
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from torch.autograd import Variable
 import numpy as np
 import os
 

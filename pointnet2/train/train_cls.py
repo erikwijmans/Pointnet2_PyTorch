@@ -4,7 +4,6 @@ import torch.optim.lr_scheduler as lr_sched
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import DataLoader
-from torch.autograd import Variable
 from torchvision import transforms
 import os
 

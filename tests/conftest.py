@@ -1,9 +1,8 @@
 import pytest
-
-pytest_plugins = ['helpers_namespace']
-
 import torch
 import numpy as np
+
+pytest_plugins = ['helpers_namespace']
 
 
 def _test_loop(model, model_fn, inputs, labels):
@@ -45,9 +44,8 @@ def cls_test_no_xyz(model, model_fn):
 def semseg_test_xyz(model, model_fn):
     B, N = 4, 2048
     inputs = torch.randn(B, N, 6).cuda()
-    labels = (
-        torch.from_numpy(np.random.randint(0, 3, size=B * N)).view(B, N).cuda()
-    )
+    labels = (torch.from_numpy(np.random.randint(0, 3,
+                                                 size=B * N)).view(B, N).cuda())
     model.cuda()
 
     _test_loop(model, model_fn, inputs, labels)
@@ -57,9 +55,8 @@ def semseg_test_xyz(model, model_fn):
 def semseg_test_no_xyz(model, model_fn):
     B, N = 4, 2048
     inputs = torch.randn(B, N, 3).cuda()
-    labels = (
-        torch.from_numpy(np.random.randint(0, 3, size=B * N)).view(B, N).cuda()
-    )
+    labels = (torch.from_numpy(np.random.randint(0, 3,
+                                                 size=B * N)).view(B, N).cuda())
     model.cuda()
 
     _test_loop(model, model_fn, inputs, labels)

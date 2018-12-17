@@ -57,7 +57,7 @@ class Pointnet2MSG(nn.Module):
             PointnetSAModuleMSG(
                 npoint=512,
                 radii=[0.1, 0.2, 0.4],
-                nsamples=[15, 32, 128],
+                nsamples=[16, 32, 128],
                 mlps=[[input_channels, 32, 32,
                        64], [input_channels, 64, 64, 128],
                       [input_channels, 64, 96, 128]],

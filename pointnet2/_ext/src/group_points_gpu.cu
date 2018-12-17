@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "cuda_utils.h"
-#include "group_points_gpu.h"
 
 // input: points(b, c, n) idx(b, npoints, nsample)
 // output: out(b, c, npoints, nsample)
@@ -30,17 +29,13 @@ __global__ void group_points_kernel(int b, int c, int n, int npoints,
 
 void group_points_kernel_wrapper(int b, int c, int n, int npoints, int nsample,
 				 const float *points, const int *idx,
-				 float *out, cudaStream_t stream) {
+				 float *out) {
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-    cudaError_t err;
     group_points_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
 	b, c, n, npoints, nsample, points, idx, out);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }
 
 // input: grad_out(b, c, npoints, nsample), idx(b, npoints, nsample)
@@ -70,15 +65,11 @@ __global__ void group_points_grad_kernel(int b, int c, int n, int npoints,
 
 void group_points_grad_kernel_wrapper(int b, int c, int n, int npoints,
 				      int nsample, const float *grad_out,
-				      const int *idx, float *grad_points,
-				      cudaStream_t stream) {
-    cudaError_t err;
+				      const int *idx, float *grad_points) {
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
     group_points_grad_kernel<<<b, opt_block_config(npoints, c), 0, stream>>>(
 	b, c, n, npoints, nsample, grad_out, idx, grad_points);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }

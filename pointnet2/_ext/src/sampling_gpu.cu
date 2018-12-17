@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "cuda_utils.h"
-#include "sampling_gpu.h"
 
 // input: points(b, c, n) idx(b, m)
 // output: out(b, c, m)
@@ -22,17 +21,13 @@ __global__ void gather_points_kernel(int b, int c, int n, int m,
 
 void gather_points_kernel_wrapper(int b, int c, int n, int npoints,
 				  const float *points, const int *idx,
-				  float *out, cudaStream_t stream) {
+				  float *out) {
 
-    cudaError_t err;
-    gather_points_kernel<<<dim3(b, c, 1), opt_n_threads(npoints), 0, stream>>>(
+    gather_points_kernel<<<dim3(b, c, 1), opt_n_threads(npoints), 0,
+			   at::cuda::getCurrentCUDAStream()>>>(
 	b, c, n, npoints, points, idx, out);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }
 
 // input: grad_out(b, c, m) idx(b, m)
@@ -54,19 +49,13 @@ __global__ void gather_points_grad_kernel(int b, int c, int n, int m,
 
 void gather_points_grad_kernel_wrapper(int b, int c, int n, int npoints,
 				       const float *grad_out, const int *idx,
-				       float *grad_points,
-				       cudaStream_t stream) {
+				       float *grad_points) {
 
-    cudaError_t err;
     gather_points_grad_kernel<<<dim3(b, c, 1), opt_n_threads(npoints), 0,
-				stream>>>(b, c, n, npoints, grad_out, idx,
-					  grad_points);
+				at::cuda::getCurrentCUDAStream()>>>(
+	b, c, n, npoints, grad_out, idx, grad_points);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }
 
 __device__ void __update(float *__restrict__ dists, int *__restrict__ dists_i,
@@ -191,60 +180,57 @@ __global__ void furthest_point_sampling_kernel(
 
 void furthest_point_sampling_kernel_wrapper(int b, int n, int m,
 					    const float *dataset, float *temp,
-					    int *idxs, cudaStream_t stream) {
+					    int *idxs) {
 
-    cudaError_t err;
     unsigned int n_threads = opt_n_threads(n);
+
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
     switch (n_threads) {
     case 512:
-	furthest_point_sampling_kernel<512><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<512>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 256:
-	furthest_point_sampling_kernel<256><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<256>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 128:
-	furthest_point_sampling_kernel<128><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<128>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 64:
-	furthest_point_sampling_kernel<64><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<64>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 32:
-	furthest_point_sampling_kernel<32><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<32>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 16:
-	furthest_point_sampling_kernel<16><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<16>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 8:
-	furthest_point_sampling_kernel<8><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<8>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 4:
-	furthest_point_sampling_kernel<4><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<4>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 2:
-	furthest_point_sampling_kernel<2><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<2>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     case 1:
-	furthest_point_sampling_kernel<1><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<1>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
 	break;
     default:
-	furthest_point_sampling_kernel<512><<<b, n_threads, 0, stream>>>(
-	    b, n, m, dataset, temp, idxs);
+	furthest_point_sampling_kernel<512>
+	    <<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
     }
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }

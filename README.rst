@@ -10,16 +10,24 @@ The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU us
 Building CUDA kernels
 ---------------------
 
-- ``mkdir build && cd build``
-- ``cmake .. && make``
+::
+
+  python setup.py install
+
 
 Exampling training
 ------------------
 
 Two training examples are provided by ``pointnet2/train/train_sem_seg.py`` and ``pointnet2/train/train_cls.py``.  The datasets for both will be downloaded automatically by default.
 
-The scripts expect that you are in the root directory and have that directory added to your ``PYTHONPATH``,
-i.e ``export PYTHONPATH=$(pwd):${PYTHONPATH}``
+
+They can be run via
+
+::
+
+  python -m pointnet2.train.train_cls
+
+  python -m pointnet2.train.train_sem_seg
 
 
 Citation

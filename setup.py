@@ -14,18 +14,18 @@ setup(
     ext_modules=[
         CUDAExtension(
             name='pointnet2._ext',
-            sources=glob.glob('pointnet2/_ext/src/*.cpp') +
-            glob.glob('pointnet2/_ext/src/*.cu'),
+            sources=glob.glob('pointnet2/_ext-src/src/*.cpp') +
+            glob.glob('pointnet2/_ext-src/src/*.cu'),
             extra_compile_args={
                 'cxx': [
                     '-O2', '-I{}'.format(
                         osp.join(
-                            osp.dirname(__file__), 'pointnet2/_ext/include'))
+                            osp.dirname(__file__), 'pointnet2/_ext-src/include'))
                 ],
                 'nvcc': [
                     '-O2', '-I{}'.format(
                         osp.join(
-                            osp.dirname(__file__), 'pointnet2/_ext/include'))
+                            osp.dirname(__file__), 'pointnet2/_ext-src/include'))
                 ]
             })
     ],

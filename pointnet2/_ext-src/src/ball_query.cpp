@@ -9,6 +9,8 @@ at::Tensor ball_query(at::Tensor new_xyz, at::Tensor xyz, const float radius,
 		      const int nsample) {
     CHECK_CONTIGUOUS(new_xyz);
     CHECK_CONTIGUOUS(xyz);
+    CHECK_IS_FLOAT(new_xyz);
+    CHECK_IS_FLOAT(xyz);
 
     if (new_xyz.type().is_cuda()) {
 	CHECK_CUDA(xyz);

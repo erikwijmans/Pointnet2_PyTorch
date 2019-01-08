@@ -3,12 +3,22 @@ Pointnet2/Pointnet++ PyTorch
 
 Implemention of Pointnet2/Pointnet++ written in `PyTorch <http://pytorch.org>`_.
 
+Supports PyTorch version >= 1.0.0.  See `v1.0 https://github.com/erikwijmans/Pointnet2_PyTorch/releases/tag/v1.0`_
+for support of older version of PyTorch.
+
+
 Official code release for the paper (in tensorflow): https://github.com/charlesq34/pointnet2
 
 The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU using CUDA.
 
 Building CUDA kernels
 ---------------------
+
+::
+  python setup.py build_ext --inplace
+
+
+Optionally, you can also install this repo as a package via
 
 ::
 

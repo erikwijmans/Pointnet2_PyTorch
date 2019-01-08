@@ -14,6 +14,8 @@ void three_interpolate_grad_kernel_wrapper(int b, int c, int n, int m,
 std::vector<at::Tensor> three_nn(at::Tensor unknowns, at::Tensor knows) {
     CHECK_CONTIGUOUS(unknowns);
     CHECK_CONTIGUOUS(knows);
+    CHECK_IS_FLOAT(unknowns);
+    CHECK_IS_FLOAT(knows);
 
     if (unknowns.type().is_cuda()) {
 	CHECK_CUDA(knows);
@@ -43,6 +45,9 @@ at::Tensor three_interpolate(at::Tensor points, at::Tensor idx,
     CHECK_CONTIGUOUS(points);
     CHECK_CONTIGUOUS(idx);
     CHECK_CONTIGUOUS(weight);
+    CHECK_IS_FLOAT(points);
+    CHECK_IS_INT(idx);
+    CHECK_IS_FLOAT(weight);
 
     if (points.type().is_cuda()) {
 	CHECK_CUDA(idx);
@@ -69,6 +74,9 @@ at::Tensor three_interpolate_grad(at::Tensor grad_out, at::Tensor idx,
     CHECK_CONTIGUOUS(grad_out);
     CHECK_CONTIGUOUS(idx);
     CHECK_CONTIGUOUS(weight);
+    CHECK_IS_FLOAT(grad_out);
+    CHECK_IS_INT(idx);
+    CHECK_IS_FLOAT(weight);
 
     if (grad_out.type().is_cuda()) {
 	CHECK_CUDA(idx);

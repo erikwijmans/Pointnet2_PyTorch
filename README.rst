@@ -5,8 +5,8 @@ Pointnet2/Pointnet++ PyTorch
 
 * Supports Multi-GPU training via `nn.DataParallel <https://pytorch.org/docs/stable/nn.html#torch.nn.DataParallel>`_.
 
-* Supports PyTorch version >= 1.0.0.  See `v1.0 <https://github.com/erikwijmans/Pointnet2_PyTorch/releases/tag/v1.0>`_
-for support of older version of PyTorch.
+* Supports PyTorch version >= 1.0.0.  Use `v1.0 <https://github.com/erikwijmans/Pointnet2_PyTorch/releases/tag/v1.0>`_
+  for support of older version of PyTorch.
 
 
 See the official code release for the paper (in tensorflow), `charlesq34/pointnet2 <https://github.com/charlesq34/pointnet2>`_,

@@ -1,13 +1,16 @@
 Pointnet2/Pointnet++ PyTorch
 ============================
 
-Implemention of Pointnet2/Pointnet++ written in `PyTorch <http://pytorch.org>`_.
+* Implemention of Pointnet2/Pointnet++ written in `PyTorch <http://pytorch.org>`_.
 
-Supports PyTorch version >= 1.0.0.  See `v1.0 https://github.com/erikwijmans/Pointnet2_PyTorch/releases/tag/v1.0`_
+* Supports Multi-GPU training via `nn.DataParallel <https://pytorch.org/docs/stable/nn.html#torch.nn.DataParallel>`_.
+
+* Supports PyTorch version >= 1.0.0.  See `v1.0 <https://github.com/erikwijmans/Pointnet2_PyTorch/releases/tag/v1.0>`_
 for support of older version of PyTorch.
 
 
-Official code release for the paper (in tensorflow): https://github.com/charlesq34/pointnet2
+See the official code release for the paper (in tensorflow), `charlesq34/pointnet2 <https://github.com/charlesq34/pointnet2>`_,
+for official model definitions and hyper-parameters.
 
 The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU using CUDA.
 

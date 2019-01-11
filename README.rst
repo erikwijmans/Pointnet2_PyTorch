@@ -36,11 +36,11 @@ Setup
     python setup.py build_ext --inplace
 
 
-Optionally, you can also install this repo as a package via
+* Optionally, you can also install this repo as a package
 
-::
+  ::
 
-  pip install -e .
+    pip install -e .
 
 
 Exampling training

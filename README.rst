@@ -21,7 +21,8 @@ Setup
 
   ::
 
-    pip install -e .
+    pip install -r requirments.txt
+
 
 * Building `_ext` module
 
@@ -34,13 +35,14 @@ Optionally, you can also install this repo as a package via
 
 ::
 
-  python setup.py install
+  pip install -e .
 
 
 Exampling training
 ------------------
 
-Two training examples are provided by ``pointnet2/train/train_sem_seg.py`` and ``pointnet2/train/train_cls.py``.  The datasets for both will be downloaded automatically by default.
+Two training examples are provided by ``pointnet2/train/train_sem_seg.py`` and ``pointnet2/train/train_cls.py``.
+The datasets for both will be downloaded automatically by default.
 
 
 They can be run via

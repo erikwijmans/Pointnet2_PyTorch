@@ -1,11 +1,8 @@
 import torch
-from torch.autograd import Variable
 from torch.autograd import Function
-import torch.nn.functional as F
 import torch.nn as nn
-from collections import namedtuple
-from pointnet2.utils import pytorch_utils as pt_utils
-from typing import List, Tuple
+import etw_pytorch_utils as pt_utils
+from typing import Tuple
 
 import pointnet2._ext as _ext
 

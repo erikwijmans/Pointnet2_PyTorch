@@ -13,3 +13,4 @@ dist/
 pointnet2.egg-info/
 *.zip
 *.so
+.tox/

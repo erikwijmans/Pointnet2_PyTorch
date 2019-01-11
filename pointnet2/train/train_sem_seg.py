@@ -1,16 +1,12 @@
-import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_sched
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
-import numpy as np
-import os
+import etw_pytorch_utils as pt_utils
 
 from pointnet2.models import Pointnet2SemMSG as Pointnet
 from pointnet2.models.pointnet2_msg_sem import model_fn_decorator
 from pointnet2.data import Indoor3DSemSeg
-import pointnet2.utils.pytorch_utils as pt_utils
 
 import argparse
 

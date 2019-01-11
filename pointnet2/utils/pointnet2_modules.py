@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import etw_pytorch_utils as pt_utils
+from typing import List
 
 from pointnet2.utils import pointnet2_utils
-from pointnet2.utils import pytorch_utils as pt_utils
-from typing import List
 
 
 class _PointnetSAModuleBase(nn.Module):

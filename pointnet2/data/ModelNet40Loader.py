@@ -1,7 +1,10 @@
 import torch
 import torch.utils.data as data
 import numpy as np
-import os, sys, h5py, subprocess, shlex
+import os
+import h5py
+import subprocess
+import shlex
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

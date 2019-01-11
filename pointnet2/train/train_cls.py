@@ -2,15 +2,13 @@ import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_sched
 import torch.nn as nn
-import numpy as np
 from torch.utils.data import DataLoader
 from torchvision import transforms
-import os
+import etw_pytorch_utils as pt_utils
 
 from pointnet2.models import Pointnet2ClsMSG as Pointnet
 from pointnet2.models.pointnet2_msg_cls import model_fn_decorator
 from pointnet2.data import ModelNet40Cls
-import pointnet2.utils.pytorch_utils as pt_utils
 import pointnet2.data.data_utils as d_utils
 import argparse
 

@@ -1,7 +1,10 @@
 import torch
 import torch.utils.data as data
 import numpy as np
-import os, sys, h5py, subprocess, shlex
+import os
+import h5py
+import subprocess
+import shlex
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -29,29 +32,25 @@ class Indoor3DSemSeg(data.Dataset):
         if download and not os.path.exists(self.data_dir):
             zipfile = os.path.join(BASE_DIR, os.path.basename(self.url))
             subprocess.check_call(
-                shlex.split("curl {} -o {}".format(self.url, zipfile))
-            )
+                shlex.split("curl {} -o {}".format(self.url, zipfile)))
 
             subprocess.check_call(
-                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR))
-            )
+                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR)))
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
 
         self.train, self.num_points = train, num_points
 
         all_files = _get_data_files(
-            os.path.join(self.data_dir, "all_files.txt")
-        )
+            os.path.join(self.data_dir, "all_files.txt"))
         room_filelist = _get_data_files(
-            os.path.join(self.data_dir, "room_filelist.txt")
-        )
+            os.path.join(self.data_dir, "room_filelist.txt"))
 
         data_batchlist, label_batchlist = [], []
         for f in all_files:
-            d, l = _load_data_file(os.path.join(BASE_DIR, f))
-            data_batchlist.append(d)
-            label_batchlist.append(l)
+            data, label = _load_data_file(os.path.join(BASE_DIR, f))
+            data_batchlist.append(data)
+            label_batchlist.append(label)
 
         data_batches = np.concatenate(data_batchlist, 0)
         labels_batches = np.concatenate(label_batchlist, 0)
@@ -75,10 +74,10 @@ class Indoor3DSemSeg(data.Dataset):
         pt_idxs = np.arange(0, self.num_points)
         np.random.shuffle(pt_idxs)
 
-        current_points = torch.from_numpy(self.points[idx, pt_idxs].copy()
-                                         ).type(torch.FloatTensor)
-        current_labels = torch.from_numpy(self.labels[idx, pt_idxs].copy()
-                                         ).type(torch.LongTensor)
+        current_points = torch.from_numpy(
+            self.points[idx, pt_idxs].copy()).type(torch.FloatTensor)
+        current_labels = torch.from_numpy(
+            self.labels[idx, pt_idxs].copy()).type(torch.LongTensor)
 
         return current_points, current_labels
 

@@ -14,12 +14,20 @@ for official model definitions and hyper-parameters.
 
 The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU using CUDA.
 
-Building CUDA kernels
----------------------
+Setup
+-----
 
-::
+* Install dependencies
 
-  python setup.py build_ext --inplace
+  ::
+
+    pip install -e .
+
+* Building `_ext` module
+
+  ::
+
+    python setup.py build_ext --inplace
 
 
 Optionally, you can also install this repo as a package via

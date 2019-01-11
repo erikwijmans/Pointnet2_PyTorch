@@ -3,8 +3,18 @@ from torch.autograd import Function
 import torch.nn as nn
 import etw_pytorch_utils as pt_utils
 from typing import Tuple
+import sys
 
-import pointnet2._ext as _ext
+try:
+    import pointnet2._ext as _ext
+except ModuleNotFoundError:
+    tb = sys.exc_info()[2]
+
+    raise ModuleNotFoundError(
+        'Could not import _ext module.\n'
+        'Please see the setup instructions in the README: '
+        'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
+    ).with_traceback(tb)
 
 
 class RandomDropout(nn.Module):

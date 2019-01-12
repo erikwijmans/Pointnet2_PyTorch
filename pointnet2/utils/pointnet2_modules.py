@@ -2,9 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import etw_pytorch_utils as pt_utils
-from typing import List
 
 from pointnet2.utils import pointnet2_utils
+
+
+if False:
+    # Workaround for type hints without depending on the `typing` module
+    from typing import *
 
 
 class _PointnetSAModuleBase(nn.Module):
@@ -15,8 +19,9 @@ class _PointnetSAModuleBase(nn.Module):
         self.groupers = None
         self.mlps = None
 
-    def forward(self, xyz: torch.Tensor,
-                features: torch.Tensor = None) -> (torch.Tensor, torch.Tensor):
+    def forward(self, xyz,
+                features = None):
+        # type: (_PointnetSAModuleBase, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
         r"""
         Parameters
         ----------
@@ -77,12 +82,13 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
 
     def __init__(self,
                  *,
-                 npoint: int,
-                 radii: List[float],
-                 nsamples: List[int],
-                 mlps: List[List[int]],
-                 bn: bool = True,
-                 use_xyz: bool = True):
+                 npoint,
+                 radii,
+                 nsamples,
+                 mlps,
+                 bn = True,
+                 use_xyz = True):
+        # type: (PointnetSAModuleMSG, int, List[float], List[int], List[List[int]], bool, bool) -> None
         super().__init__()
 
         assert len(radii) == len(nsamples) == len(mlps)
@@ -122,12 +128,13 @@ class PointnetSAModule(PointnetSAModuleMSG):
 
     def __init__(self,
                  *,
-                 mlp: List[int],
-                 npoint: int = None,
-                 radius: float = None,
-                 nsample: int = None,
-                 bn: bool = True,
-                 use_xyz: bool = True):
+                 mlp,
+                 npoint = None,
+                 radius = None,
+                 nsample = None,
+                 bn = True,
+                 use_xyz = True):
+        # type: (PointnetSAModule, List[int], int, float, int, bool, bool) -> None
         super().__init__(
             mlps=[mlp],
             npoint=npoint,
@@ -148,13 +155,15 @@ class PointnetFPModule(nn.Module):
         Use batchnorm
     """
 
-    def __init__(self, *, mlp: List[int], bn: bool = True):
+    def __init__(self, *, mlp, bn= True):
+        # type: (PointnetFPModule, List[int], bool) -> None
         super().__init__()
         self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
 
-    def forward(self, unknown: torch.Tensor, known: torch.Tensor,
-                unknow_feats: torch.Tensor,
-                known_feats: torch.Tensor) -> torch.Tensor:
+    def forward(self, unknown, known,
+                unknow_feats,
+                known_feats):
+        # type: (PointnetFPModule, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor) -> torch.Tensor
         r"""
         Parameters
         ----------

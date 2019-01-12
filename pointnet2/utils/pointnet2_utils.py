@@ -2,8 +2,8 @@ import torch
 from torch.autograd import Function
 import torch.nn as nn
 import etw_pytorch_utils as pt_utils
-from typing import Tuple
 import sys
+
 
 try:
     import pointnet2._ext as _ext
@@ -15,6 +15,11 @@ except ModuleNotFoundError:
         'Please see the setup instructions in the README: '
         'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
     ).with_traceback(tb)
+
+
+if False:
+    # Workaround for type hints without depending on the `typing` module
+    from typing import *
 
 
 class RandomDropout(nn.Module):
@@ -33,7 +38,8 @@ class RandomDropout(nn.Module):
 class FurthestPointSampling(Function):
 
     @staticmethod
-    def forward(ctx, xyz: torch.Tensor, npoint: int) -> torch.Tensor:
+    def forward(ctx, xyz, npoint):
+        # type: (Any, torch.Tensor, int) -> torch.Tensor
         r"""
         Uses iterative furthest point sampling to select a set of npoint features that have the largest
         minimum distance
@@ -63,7 +69,8 @@ furthest_point_sample = FurthestPointSampling.apply
 class GatherOperation(Function):
 
     @staticmethod
-    def forward(ctx, features: torch.Tensor, idx: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, features, idx):
+        # type: (Any, torch.Tensor, torch.Tensor) -> torch.Tensor
         r"""
 
         Parameters
@@ -100,8 +107,8 @@ gather_operation = GatherOperation.apply
 class ThreeNN(Function):
 
     @staticmethod
-    def forward(ctx, unknown: torch.Tensor,
-                known: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(ctx, unknown, known):
+        # type: (Any, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
         r"""
             Find the three nearest neighbors of unknown in known
         Parameters
@@ -133,8 +140,8 @@ three_nn = ThreeNN.apply
 class ThreeInterpolate(Function):
 
     @staticmethod
-    def forward(ctx, features: torch.Tensor, idx: torch.Tensor,
-                weight: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, features, idx, weight):
+        # type(Any, torch.Tensor, torch.Tensor, torch.Tensor) -> Torch.Tensor
         r"""
             Performs weight linear interpolation on 3 features
         Parameters
@@ -159,8 +166,8 @@ class ThreeInterpolate(Function):
         return _ext.three_interpolate(features, idx, weight)
 
     @staticmethod
-    def backward(ctx, grad_out: torch.Tensor
-                ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def backward(ctx, grad_out):
+        # type: (Any, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
         r"""
         Parameters
         ----------
@@ -190,7 +197,8 @@ three_interpolate = ThreeInterpolate.apply
 class GroupingOperation(Function):
 
     @staticmethod
-    def forward(ctx, features: torch.Tensor, idx: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, features, idx):
+        # type: (Any, torch.Tensor, torch.Tensor) -> torch.Tensor
         r"""
 
         Parameters
@@ -213,8 +221,8 @@ class GroupingOperation(Function):
         return _ext.group_points(features, idx)
 
     @staticmethod
-    def backward(ctx,
-                 grad_out: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def backward(ctx, grad_out):
+        # type: (Any, torch.tensor) -> Tuple[torch.Tensor, torch.Tensor]
         r"""
 
         Parameters
@@ -241,8 +249,8 @@ grouping_operation = GroupingOperation.apply
 class BallQuery(Function):
 
     @staticmethod
-    def forward(ctx, radius: float, nsample: int, xyz: torch.Tensor,
-                new_xyz: torch.Tensor) -> torch.Tensor:
+    def forward(ctx, radius, nsample, xyz, new_xyz):
+        # type: (Any, float, int, torch.Tensor, torch.Tensor) -> torch.Tensor
         r"""
 
         Parameters
@@ -283,14 +291,16 @@ class QueryAndGroup(nn.Module):
         Maximum number of features to gather in the ball
     """
 
-    def __init__(self, radius: float, nsample: int, use_xyz: bool = True):
+    def __init__(self, radius, nsample, use_xyz = True):
+        # type: (QueryAndGroup, float, int, bool) -> None
         super().__init__()
         self.radius, self.nsample, self.use_xyz = radius, nsample, use_xyz
 
     def forward(self,
-                xyz: torch.Tensor,
-                new_xyz: torch.Tensor,
-                features: torch.Tensor = None) -> Tuple[torch.Tensor]:
+                xyz,
+                new_xyz,
+                features = None):
+        # type: (QueryAndGroup, torch.Tensor. torch.Tensor, torch.Tensor) -> Tuple[Torch.Tensor]
         r"""
         Parameters
         ----------
@@ -335,14 +345,16 @@ class GroupAll(nn.Module):
     ---------
     """
 
-    def __init__(self, use_xyz: bool = True):
+    def __init__(self, use_xyz = True):
+        # type: (GroupAll, bool) -> None
         super().__init__()
         self.use_xyz = use_xyz
 
     def forward(self,
-                xyz: torch.Tensor,
-                new_xyz: torch.Tensor,
-                features: torch.Tensor = None) -> Tuple[torch.Tensor]:
+                xyz,
+                new_xyz,
+                features = None):
+        # type: (GroupAll, torch.Tensor, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor]
         r"""
         Parameters
         ----------

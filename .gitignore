@@ -14,3 +14,4 @@ pointnet2.egg-info/
 *.zip
 *.so
 .tox/
+.mypy_cache

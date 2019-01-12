@@ -1,7 +1,10 @@
 import torch
 import torch.utils.data as data
 import numpy as np
-import os, sys, h5py, subprocess, shlex
+import os
+import h5py
+import subprocess
+import shlex
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,12 +35,10 @@ class ModelNet40Cls(data.Dataset):
         if download and not os.path.exists(self.data_dir):
             zipfile = os.path.join(BASE_DIR, os.path.basename(self.url))
             subprocess.check_call(
-                shlex.split("curl {} -o {}".format(self.url, zipfile))
-            )
+                shlex.split("curl {} -o {}".format(self.url, zipfile)))
 
             subprocess.check_call(
-                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR))
-            )
+                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR)))
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
 
@@ -83,9 +84,7 @@ class ModelNet40Cls(data.Dataset):
         self.actual_number_of_points = min(
             max(
                 np.random.randint(self.num_points * 0.8, self.num_points * 1.2),
-                1
-            ), self.points.shape[1]
-        )
+                1), self.points.shape[1])
 
 
 if __name__ == "__main__":

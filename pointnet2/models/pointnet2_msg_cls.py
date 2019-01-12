@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
-from pointnet2.utils import pytorch_utils as pt_utils
-from pointnet2.utils.pointnet2_modules import (
-    PointnetSAModuleMSG, PointnetSAModule
-)
+import etw_pytorch_utils as pt_utils
 from collections import namedtuple
+
+from pointnet2.utils.pointnet2_modules import (PointnetSAModuleMSG,
+                                               PointnetSAModule)
 
 
 def model_fn_decorator(criterion):
@@ -23,12 +23,10 @@ def model_fn_decorator(criterion):
             _, classes = torch.max(preds, -1)
             acc = (classes == labels).float().sum() / labels.numel()
 
-            return ModelReturn(
-                preds, loss, {
-                    "acc": acc.item(),
-                    'loss': loss.item()
-                }
-            )
+            return ModelReturn(preds, loss, {
+                "acc": acc.item(),
+                'loss': loss.item()
+            })
 
     return model_fn
 
@@ -57,13 +55,11 @@ class Pointnet2MSG(nn.Module):
             PointnetSAModuleMSG(
                 npoint=512,
                 radii=[0.1, 0.2, 0.4],
-                nsamples=[15, 32, 128],
-                mlps=[[input_channels, 32, 32,
-                       64], [input_channels, 64, 64, 128],
+                nsamples=[16, 32, 128],
+                mlps=[[input_channels, 32, 32, 64],
+                      [input_channels, 64, 64, 128],
                       [input_channels, 64, 96, 128]],
-                use_xyz=use_xyz
-            )
-        )
+                use_xyz=use_xyz))
 
         input_channels = 64 + 128 + 128
         self.SA_modules.append(
@@ -71,32 +67,25 @@ class Pointnet2MSG(nn.Module):
                 npoint=128,
                 radii=[0.2, 0.4, 0.8],
                 nsamples=[32, 64, 128],
-                mlps=[[input_channels, 64, 64,
-                       128], [input_channels, 128, 128, 256],
+                mlps=[[input_channels, 64, 64, 128],
+                      [input_channels, 128, 128, 256],
                       [input_channels, 128, 128, 256]],
-                use_xyz=use_xyz
-            )
-        )
+                use_xyz=use_xyz))
         self.SA_modules.append(
             PointnetSAModule(
-                mlp=[128 + 256 + 256, 256, 512, 1024], use_xyz=use_xyz
-            )
-        )
+                mlp=[128 + 256 + 256, 256, 512, 1024], use_xyz=use_xyz))
 
-        self.FC_layer = nn.Sequential(
-            pt_utils.FC(1024, 512, bn=True),
-            nn.Dropout(p=0.5),
-            pt_utils.FC(512, 256, bn=True),
-            nn.Dropout(p=0.5),
-            pt_utils.FC(256, num_classes, activation=None)
-        )
+        self.FC_layer = (pt_utils.Seq(1024) \
+                .fc(512, bn=True)
+                .dropout(0.5)
+                .fc(256, bn=True)
+                .dropout(0.5)
+                .fc(num_classes, activation=None))
 
     def _break_up_pc(self, pc):
         xyz = pc[..., 0:3].contiguous()
-        features = (
-            pc[..., 3:].transpose(1, 2).contiguous()
-            if pc.size(-1) > 3 else None
-        )
+        features = (pc[..., 3:].transpose(1, 2).contiguous()
+                    if pc.size(-1) > 3 else None)
 
         return xyz, features
 

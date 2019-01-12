@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ball_query_gpu.h"
 #include "cuda_utils.h"
 
 // input: new_xyz(b, m, 3) xyz(b, n, 3)
@@ -46,16 +45,11 @@ __global__ void query_ball_point_kernel(int b, int n, int m, float radius,
 
 void query_ball_point_kernel_wrapper(int b, int n, int m, float radius,
 				     int nsample, const float *new_xyz,
-				     const float *xyz, int *idx,
-				     cudaStream_t stream) {
+				     const float *xyz, int *idx) {
 
-    cudaError_t err;
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     query_ball_point_kernel<<<b, opt_n_threads(m), 0, stream>>>(
 	b, n, m, radius, nsample, new_xyz, xyz, idx);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel failed : %s\n", cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }

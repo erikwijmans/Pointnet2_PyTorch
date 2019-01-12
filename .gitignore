@@ -7,3 +7,10 @@ checkpoints
 *.prof
 .lvimrc
 .vimtags
+.ccls
+.ccls-cache/
+dist/
+pointnet2.egg-info/
+*.zip
+*.so
+.tox/

@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include "cuda_utils.h"
-#include "interpolate_gpu.h"
 
 // input: unknown(b, n, 3) known(b, m, 3)
 // output: dist2(b, n, 3), idx(b, n, 3)
@@ -61,20 +60,13 @@ __global__ void three_nn_kernel(int b, int n, int m,
 }
 
 void three_nn_kernel_wrapper(int b, int n, int m, const float *unknown,
-			     const float *known, float *dist2, int *idx,
-			     cudaStream_t stream) {
+			     const float *known, float *dist2, int *idx) {
 
-    cudaError_t err;
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     three_nn_kernel<<<b, opt_n_threads(n), 0, stream>>>(b, n, m, unknown, known,
 							dist2, idx);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel "
-			"failed : %s\n",
-		cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }
 
 // input: points(b, c, m), idx(b, n, 3), weight(b, n, 3)
@@ -112,20 +104,13 @@ __global__ void three_interpolate_kernel(int b, int c, int m, int n,
 
 void three_interpolate_kernel_wrapper(int b, int c, int m, int n,
 				      const float *points, const int *idx,
-				      const float *weight, float *out,
-				      cudaStream_t stream) {
+				      const float *weight, float *out) {
 
-    cudaError_t err;
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     three_interpolate_kernel<<<b, opt_block_config(n, c), 0, stream>>>(
 	b, c, m, n, points, idx, weight, out);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel "
-			"failed : %s\n",
-		cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }
 
 // input: grad_out(b, c, n), idx(b, n, 3), weight(b, n, 3)
@@ -160,21 +145,14 @@ __global__ void three_interpolate_grad_kernel(
     }
 }
 
-void three_interpolate_grad_kernel_wrapper(int b, int n, int c, int m,
+void three_interpolate_grad_kernel_wrapper(int b, int c, int n, int m,
 					   const float *grad_out,
 					   const int *idx, const float *weight,
-					   float *grad_points,
-					   cudaStream_t stream) {
+					   float *grad_points) {
 
-    cudaError_t err;
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     three_interpolate_grad_kernel<<<b, opt_block_config(n, c), 0, stream>>>(
-	b, n, c, m, grad_out, idx, weight, grad_points);
+	b, c, n, m, grad_out, idx, weight, grad_points);
 
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-	fprintf(stderr, "CUDA kernel "
-			"failed : %s\n",
-		cudaGetErrorString(err));
-	exit(-1);
-    }
+    CUDA_CHECK_ERRORS();
 }

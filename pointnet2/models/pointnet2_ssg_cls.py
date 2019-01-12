@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
-from pointnet2.utils import pytorch_utils as pt_utils
-from pointnet2.utils.pointnet2_modules import PointnetSAModule
+import etw_pytorch_utils as pt_utils
 from collections import namedtuple
+
+from pointnet2.utils.pointnet2_modules import PointnetSAModule
 
 
 def model_fn_decorator(criterion):
@@ -21,12 +22,10 @@ def model_fn_decorator(criterion):
             _, classes = torch.max(preds, -1)
             acc = (classes == labels).float().sum() / labels.numel()
 
-            return ModelReturn(
-                preds, loss, {
-                    "acc": acc.item(),
-                    'loss': loss.item()
-                }
-            )
+            return ModelReturn(preds, loss, {
+                "acc": acc.item(),
+                'loss': loss.item()
+            })
 
     return model_fn
 
@@ -57,36 +56,28 @@ class Pointnet2SSG(nn.Module):
                 radius=0.2,
                 nsample=64,
                 mlp=[input_channels, 64, 64, 128],
-                use_xyz=use_xyz
-            )
-        )
+                use_xyz=use_xyz))
         self.SA_modules.append(
             PointnetSAModule(
                 npoint=128,
                 radius=0.4,
                 nsample=64,
                 mlp=[128, 128, 128, 256],
-                use_xyz=use_xyz
-            )
-        )
+                use_xyz=use_xyz))
         self.SA_modules.append(
-            PointnetSAModule(mlp=[256, 256, 512, 1024], use_xyz=use_xyz)
-        )
+            PointnetSAModule(mlp=[256, 256, 512, 1024], use_xyz=use_xyz))
 
-        self.FC_layer = nn.Sequential(
-            pt_utils.FC(1024, 512, bn=True),
-            nn.Dropout(p=0.5),
-            pt_utils.FC(512, 256, bn=True),
-            nn.Dropout(p=0.5),
-            pt_utils.FC(256, num_classes, activation=None)
-        )
+        self.FC_layer = (pt_utils.Seq(1024) \
+                .fc(512, bn=True)
+                .dropout(0.5)
+                .fc(256, bn=True)
+                .dropout(0.5)
+                .fc(num_classes, activation=None))
 
     def _break_up_pc(self, pc):
         xyz = pc[..., 0:3].contiguous()
-        features = (
-            pc[..., 3:].transpose(1, 2).contiguous()
-            if pc.size(-1) > 3 else None
-        )
+        features = (pc[..., 3:].transpose(1, 2).contiguous()
+                    if pc.size(-1) > 3 else None)
 
         return xyz, features
 

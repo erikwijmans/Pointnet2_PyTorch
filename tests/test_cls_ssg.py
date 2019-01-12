@@ -1,3 +1,4 @@
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 from pointnet2.models.pointnet2_ssg_cls import model_fn_decorator, Pointnet2SSG
 import torch.nn as nn
 import pytest

@@ -1,5 +1,6 @@
-git+git://github.com/erikwijmans/etw_pytorch_utils.git#egg=etw_pytorch_utils
+git+git://github.com/erikwijmans/etw_pytorch_utils.git@v1.0.0#egg=etw_pytorch_utils-1.0.0
 h5py
 numpy
 torch>=1.0
 torchvision
+pprint

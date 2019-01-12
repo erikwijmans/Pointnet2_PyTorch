@@ -72,10 +72,8 @@ class PointcloudRotatePerturbation(object):
         self.angle_sigma, self.angle_clip = angle_sigma, angle_clip
 
     def _get_angles(self):
-        angles = np.clip(
-            self.angle_sigma * np.random.randn(3), -self.angle_clip,
-            self.angle_clip
-        )
+        angles = np.clip(self.angle_sigma * np.random.randn(3),
+                         -self.angle_clip, self.angle_clip)
 
         return angles
 
@@ -106,8 +104,7 @@ class PointcloudJitter(object):
 
     def __call__(self, points):
         jittered_data = points.new(points.size(0), 3).normal_(
-            mean=0.0, std=self.std
-        ).clamp_(-self.clip, self.clip)
+            mean=0.0, std=self.std).clamp_(-self.clip, self.clip)
         points[:, 0:3] += jittered_data
         return points
 
@@ -118,9 +115,8 @@ class PointcloudTranslate(object):
         self.translate_range = translate_range
 
     def __call__(self, points):
-        translation = np.random.uniform(
-            -self.translate_range, self.translate_range
-        )
+        translation = np.random.uniform(-self.translate_range,
+                                        self.translate_range)
         points[:, 0:3] += translation
         return points
 

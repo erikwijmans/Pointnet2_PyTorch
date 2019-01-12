@@ -17,9 +17,9 @@ The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU us
 Setup
 -----
 
-* Install `python3.6` -- This repo is currently only tested with/officially supports `python3.6`
+* Install ``python3.6`` -- This repo is currently only tested with/officially supports ``python3.6``
 
-  All further instructions assume that `python` defaults to `python3.6`
+  All further instructions assume that `python` defaults to ``python3.6``
 
 
 * Install dependencies
@@ -57,6 +57,10 @@ They can be run via
   python -m pointnet2.train.train_cls
 
   python -m pointnet2.train.train_sem_seg
+
+
+Both scripts will print training progress after every epoch to the command line.  Use the ``--visdom`` flag to
+enable logging to visdom and more detailed logging of training progress.
 
 
 Citation

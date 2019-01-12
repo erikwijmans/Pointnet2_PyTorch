@@ -4,11 +4,9 @@ from enum import Enum
 PDist2Order = Enum('PDist2Order', 'd_first d_second')
 
 
-def pdist2(
-        X: torch.Tensor,
-        Z: torch.Tensor = None,
-        order: PDist2Order = PDist2Order.d_second
-) -> torch.Tensor:
+def pdist2(X: torch.Tensor,
+           Z: torch.Tensor = None,
+           order: PDist2Order = PDist2Order.d_second) -> torch.Tensor:
     r""" Calculates the pairwise distance between X and Z
 
     D[b, i, j] = l2 distance X[b, i] and Z[b, j]

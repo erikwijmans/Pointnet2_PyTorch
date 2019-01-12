@@ -85,9 +85,10 @@ class Pointnet2SSG(nn.Module):
         self.FP_modules.append(PointnetFPModule(mlp=[256 + 128, 256, 256]))
         self.FP_modules.append(PointnetFPModule(mlp=[512 + 256, 256, 256]))
 
-        self.FC_layer = nn.Sequential(
-            pt_utils.Conv1d(128, 128, bn=True), nn.Dropout(),
-            pt_utils.Conv1d(128, num_classes, activation=None))
+        self.FC_layer = (pt_utils.Seq(128) \
+                .conv1d(128, bn=True)
+                .dropout()
+                .conv1d(num_classes, activation=None))
 
     def _break_up_pc(self, pc):
         xyz = pc[..., 0:3].contiguous()

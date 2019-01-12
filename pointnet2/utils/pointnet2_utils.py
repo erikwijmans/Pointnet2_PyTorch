@@ -1,3 +1,4 @@
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 import torch
 from torch.autograd import Function
 import torch.nn as nn

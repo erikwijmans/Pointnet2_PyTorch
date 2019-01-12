@@ -1,5 +1,7 @@
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 import torch
 from enum import Enum
+
 
 PDist2Order = Enum('PDist2Order', 'd_first d_second')
 

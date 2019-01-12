@@ -110,7 +110,8 @@ class Pointnet2MSG(nn.Module):
 
         return xyz, features
 
-    def forward(self, pointcloud: torch.cuda.FloatTensor):
+    def forward(self, pointcloud):
+        # type: (Pointnet2MSG, torch.cuda.FloatTensor) -> pt_utils.Seq
         r"""
             Forward pass of the network
 

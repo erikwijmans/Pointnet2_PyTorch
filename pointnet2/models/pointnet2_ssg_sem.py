@@ -97,7 +97,8 @@ class Pointnet2SSG(nn.Module):
 
         return xyz, features
 
-    def forward(self, pointcloud: torch.cuda.FloatTensor):
+    def forward(self, pointcloud):
+        # type: (Pointnet2SSG, torch.cuda.FloatTensor) -> pt_utils.Seq
         r"""
             Forward pass of the network
 

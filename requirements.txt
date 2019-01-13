@@ -4,3 +4,5 @@ numpy
 torch>=1.0
 torchvision
 pprint
+enum34
+future

@@ -15,4 +15,4 @@ pointnet2.egg-info/
 *.so
 .tox/
 .mypy_cache
-.pyc
+**/*.pyc

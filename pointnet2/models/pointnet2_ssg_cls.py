@@ -48,7 +48,7 @@ class Pointnet2SSG(nn.Module):
     """
 
     def __init__(self, num_classes, input_channels=3, use_xyz=True):
-        super().__init__()
+        super(Pointnet2SSG, self).__init__()
 
         self.SA_modules = nn.ModuleList()
         self.SA_modules.append(

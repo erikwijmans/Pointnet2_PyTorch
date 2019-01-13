@@ -1,5 +1,6 @@
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 import torch
+import builtins
 from torch.autograd import Function
 import torch.nn as nn
 import etw_pytorch_utils as pt_utils
@@ -8,14 +9,14 @@ import sys
 
 try:
     import pointnet2._ext as _ext
-except ModuleNotFoundError:
-    tb = sys.exc_info()[2]
-
-    raise ModuleNotFoundError(
-        'Could not import _ext module.\n'
-        'Please see the setup instructions in the README: '
-        'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
-    ).with_traceback(tb)
+except ImportError:
+    if not builtins.__POINTNET2_SETUP__:
+        tb = sys.exc_info()[2]
+        raise ImportError(
+            'Could not import _ext module.\n'
+            'Please see the setup instructions in the README: '
+            'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
+        ), None, tb
 
 
 if False:
@@ -26,7 +27,7 @@ if False:
 class RandomDropout(nn.Module):
 
     def __init__(self, p=0.5, inplace=False):
-        super().__init__()
+        super(RandomDropout, self).__init__()
         self.p = p
         self.inplace = inplace
 
@@ -294,7 +295,7 @@ class QueryAndGroup(nn.Module):
 
     def __init__(self, radius, nsample, use_xyz = True):
         # type: (QueryAndGroup, float, int, bool) -> None
-        super().__init__()
+        super(QueryAndGroup, self).__init__()
         self.radius, self.nsample, self.use_xyz = radius, nsample, use_xyz
 
     def forward(self,
@@ -348,7 +349,7 @@ class GroupAll(nn.Module):
 
     def __init__(self, use_xyz = True):
         # type: (GroupAll, bool) -> None
-        super().__init__()
+        super(GroupAll, self).__init__()
         self.use_xyz = use_xyz
 
     def forward(self,

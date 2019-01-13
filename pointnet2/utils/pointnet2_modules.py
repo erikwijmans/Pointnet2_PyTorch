@@ -15,7 +15,7 @@ if False:
 class _PointnetSAModuleBase(nn.Module):
 
     def __init__(self):
-        super().__init__()
+        super(_PointnetSAModuleBase, self).__init__()
         self.npoint = None
         self.groupers = None
         self.mlps = None
@@ -82,7 +82,6 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
     """
 
     def __init__(self,
-                 *,
                  npoint,
                  radii,
                  nsamples,
@@ -90,7 +89,7 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
                  bn = True,
                  use_xyz = True):
         # type: (PointnetSAModuleMSG, int, List[float], List[int], List[List[int]], bool, bool) -> None
-        super().__init__()
+        super(PointnetSAModuleMSG, self).__init__()
 
         assert len(radii) == len(nsamples) == len(mlps)
 
@@ -128,7 +127,6 @@ class PointnetSAModule(PointnetSAModuleMSG):
     """
 
     def __init__(self,
-                 *,
                  mlp,
                  npoint = None,
                  radius = None,
@@ -136,7 +134,7 @@ class PointnetSAModule(PointnetSAModuleMSG):
                  bn = True,
                  use_xyz = True):
         # type: (PointnetSAModule, List[int], int, float, int, bool, bool) -> None
-        super().__init__(
+        super(PointnetSAModule, self).__init__(
             mlps=[mlp],
             npoint=npoint,
             radii=[radius],
@@ -156,9 +154,9 @@ class PointnetFPModule(nn.Module):
         Use batchnorm
     """
 
-    def __init__(self, *, mlp, bn= True):
+    def __init__(self, mlp, bn= True):
         # type: (PointnetFPModule, List[int], bool) -> None
-        super().__init__()
+        super(PointnetFPModule, self).__init__()
         self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
 
     def forward(self, unknown, known,
@@ -192,8 +190,7 @@ class PointnetFPModule(nn.Module):
             interpolated_feats = pointnet2_utils.three_interpolate(
                 known_feats, idx, weight)
         else:
-            interpolated_feats = known_feats.expand(*known_feats.size()[0:2],
-                                                    unknown.size(1))
+            interpolated_feats = known_feats.expand(*(known_feats.size()[0:2] + [unknown.size(1)]))
 
         if unknow_feats is not None:
             new_features = torch.cat([interpolated_feats, unknow_feats],

@@ -10,7 +10,7 @@ import sys
 try:
     import pointnet2._ext as _ext
 except ImportError:
-    if not builtins.__POINTNET2_SETUP__:
+    if not hasattr(builtins, '__POINTNET2_SETUP__') or not builtins.__POINTNET2_SETUP__:
         tb = sys.exc_info()[2]
         raise ImportError(
             'Could not import _ext module.\n'

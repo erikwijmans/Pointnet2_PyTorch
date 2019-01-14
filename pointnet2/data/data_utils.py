@@ -3,7 +3,8 @@ import torch
 import numpy as np
 
 
-def angle_axis(angle: float, axis: np.ndarray):
+def angle_axis(angle, axis):
+    # type: (float, np.ndarray) -> float
     r"""Returns a 4x4 rotation matrix that performs a rotation around axis by angle
 
     Parameters
@@ -57,12 +58,12 @@ class PointcloudRotate(object):
 
         normals = points.size(1) > 3
         if not normals:
-            return points @ rotation_matrix.t()
+            return np.matmul(points, rotation_matrix.t())
         else:
             pc_xyz = points[:, 0:3]
             pc_normals = points[:, 3:]
-            points[:, 0:3] = pc_xyz @ rotation_matrix.t()
-            points[:, 3:] = pc_normals @ rotation_matrix.t()
+            points[:, 0:3] = np.matmul(pc_xyz, rotation_matrix.t())
+            points[:, 3:] = np.matmul(pc_normals, rotation_matrix.t())
 
             return points
 
@@ -84,16 +85,16 @@ class PointcloudRotatePerturbation(object):
         Ry = angle_axis(angles[1], np.array([0.0, 1.0, 0.0]))
         Rz = angle_axis(angles[2], np.array([0.0, 0.0, 1.0]))
 
-        rotation_matrix = Rz @ Ry @ Rx
+        rotation_matrix = np.matmul(np.matmul(Rz, Ry), Rx)
 
         normals = points.size(1) > 3
         if not normals:
-            return points @ rotation_matrix.t()
+            return np.matmul(points, rotation_matrix.t())
         else:
             pc_xyz = points[:, 0:3]
             pc_normals = points[:, 3:]
-            points[:, 0:3] = pc_xyz @ rotation_matrix.t()
-            points[:, 3:] = pc_normals @ rotation_matrix.t()
+            points[:, 0:3] = np.matmul(pc_xyz, rotation_matrix.t())
+            points[:, 3:] = np.matmul(pc_normals, rotation_matrix.t())
 
             return points
 

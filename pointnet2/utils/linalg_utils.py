@@ -1,7 +1,7 @@
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 import torch
 from enum import Enum
-
+import numpy as np
 
 PDist2Order = Enum('PDist2Order', 'd_first d_second')
 
@@ -32,13 +32,13 @@ def pdist2(X,
             X = X.unsqueeze(0)
         if Z is None:
             Z = X
-            G = X @ Z.transpose(-2, -1)
+            G = np.matmul(X, Z.transpose(-2, -1))
             S = (X * X).sum(-1, keepdim=True)
             R = S.transpose(-2, -1)
         else:
             if Z.dim() == 2:
                 Z = Z.unsqueeze(0)
-            G = X @ Z.transpose(-2, -1)
+            G = np.matmul(X, Z.transpose(-2, -1))
             S = (X * X).sum(-1, keepdim=True)
             R = (Z * Z).sum(-1, keepdim=True).transpose(-2, -1)
     else:
@@ -46,13 +46,13 @@ def pdist2(X,
             X = X.unsqueeze(0)
         if Z is None:
             Z = X
-            G = X.transpose(-2, -1) @ Z
+            G = np.matmul(X.transpose(-2, -1), Z)
             R = (X * X).sum(-2, keepdim=True)
             S = R.transpose(-2, -1)
         else:
             if Z.dim() == 2:
                 Z = Z.unsqueeze(0)
-            G = X.transpose(-2, -1) @ Z
+            G = np.matmul(X.transpose(-2, -1), Z)
             S = (X * X).sum(-2, keepdim=True).transpose(-2, -1)
             R = (Z * Z).sum(-2, keepdim=True)
 

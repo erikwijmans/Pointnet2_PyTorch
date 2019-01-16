@@ -106,7 +106,7 @@ if __name__ == "__main__":
     bn_lbmd = lambda it: max(args.bn_momentum * args.bnm_decay**(int(it * args.batch_size / args.decay_step)), bnm_clip)
 
     if args.checkpoint is not None:
-        start_epoch, best_loss = pt_utils.load_checkpoint(
+        it, start_epoch, best_loss = pt_utils.load_checkpoint(
             model, optimizer, filename=args.checkpoint.split(".")[0])
 
         lr_scheduler = lr_sched.LambdaLR(

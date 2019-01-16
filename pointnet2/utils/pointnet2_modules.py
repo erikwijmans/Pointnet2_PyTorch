@@ -6,7 +6,6 @@ import etw_pytorch_utils as pt_utils
 
 from pointnet2.utils import pointnet2_utils
 
-
 if False:
     # Workaround for type hints without depending on the `typing` module
     from typing import *
@@ -20,8 +19,7 @@ class _PointnetSAModuleBase(nn.Module):
         self.groupers = None
         self.mlps = None
 
-    def forward(self, xyz,
-                features = None):
+    def forward(self, xyz, features=None):
         # type: (_PointnetSAModuleBase, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
         r"""
         Parameters
@@ -81,13 +79,7 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
         Use batchnorm
     """
 
-    def __init__(self,
-                 npoint,
-                 radii,
-                 nsamples,
-                 mlps,
-                 bn = True,
-                 use_xyz = True):
+    def __init__(self, npoint, radii, nsamples, mlps, bn=True, use_xyz=True):
         # type: (PointnetSAModuleMSG, int, List[float], List[int], List[List[int]], bool, bool) -> None
         super(PointnetSAModuleMSG, self).__init__()
 
@@ -128,11 +120,11 @@ class PointnetSAModule(PointnetSAModuleMSG):
 
     def __init__(self,
                  mlp,
-                 npoint = None,
-                 radius = None,
-                 nsample = None,
-                 bn = True,
-                 use_xyz = True):
+                 npoint=None,
+                 radius=None,
+                 nsample=None,
+                 bn=True,
+                 use_xyz=True):
         # type: (PointnetSAModule, List[int], int, float, int, bool, bool) -> None
         super(PointnetSAModule, self).__init__(
             mlps=[mlp],
@@ -154,14 +146,12 @@ class PointnetFPModule(nn.Module):
         Use batchnorm
     """
 
-    def __init__(self, mlp, bn= True):
+    def __init__(self, mlp, bn=True):
         # type: (PointnetFPModule, List[int], bool) -> None
         super(PointnetFPModule, self).__init__()
         self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
 
-    def forward(self, unknown, known,
-                unknow_feats,
-                known_feats):
+    def forward(self, unknown, known, unknow_feats, known_feats):
         # type: (PointnetFPModule, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor) -> torch.Tensor
         r"""
         Parameters
@@ -190,7 +180,8 @@ class PointnetFPModule(nn.Module):
             interpolated_feats = pointnet2_utils.three_interpolate(
                 known_feats, idx, weight)
         else:
-            interpolated_feats = known_feats.expand(*(known_feats.size()[0:2] + [unknown.size(1)]))
+            interpolated_feats = known_feats.expand(*(
+                known_feats.size()[0:2] + [unknown.size(1)]))
 
         if unknow_feats is not None:
             new_features = torch.cat([interpolated_feats, unknow_feats],

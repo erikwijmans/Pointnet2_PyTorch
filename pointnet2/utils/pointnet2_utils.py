@@ -6,17 +6,16 @@ import torch.nn as nn
 import etw_pytorch_utils as pt_utils
 import sys
 
-
 try:
     import pointnet2._ext as _ext
 except ImportError:
-    if not hasattr(builtins, '__POINTNET2_SETUP__') or not builtins.__POINTNET2_SETUP__:
+    if not hasattr(builtins,
+                   '__POINTNET2_SETUP__') or not builtins.__POINTNET2_SETUP__:
         raise ImportError(
             'Could not import _ext module.\n'
             'Please see the setup instructions in the README: '
-            'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst' 
+            'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
         )
-
 
 if False:
     # Workaround for type hints without depending on the `typing` module
@@ -98,7 +97,7 @@ class GatherOperation(Function):
     def backward(ctx, grad_out):
         idx, C, N = ctx.for_backwards
 
-        grad_features = _ext.gather_points_grad(grad_out, idx, N)
+        grad_features = _ext.gather_points_grad(grad_out.contiguous(), idx, N)
         return grad_features, None
 
 
@@ -292,15 +291,12 @@ class QueryAndGroup(nn.Module):
         Maximum number of features to gather in the ball
     """
 
-    def __init__(self, radius, nsample, use_xyz = True):
+    def __init__(self, radius, nsample, use_xyz=True):
         # type: (QueryAndGroup, float, int, bool) -> None
         super(QueryAndGroup, self).__init__()
         self.radius, self.nsample, self.use_xyz = radius, nsample, use_xyz
 
-    def forward(self,
-                xyz,
-                new_xyz,
-                features = None):
+    def forward(self, xyz, new_xyz, features=None):
         # type: (QueryAndGroup, torch.Tensor. torch.Tensor, torch.Tensor) -> Tuple[Torch.Tensor]
         r"""
         Parameters
@@ -346,15 +342,12 @@ class GroupAll(nn.Module):
     ---------
     """
 
-    def __init__(self, use_xyz = True):
+    def __init__(self, use_xyz=True):
         # type: (GroupAll, bool) -> None
         super(GroupAll, self).__init__()
         self.use_xyz = use_xyz
 
-    def forward(self,
-                xyz,
-                new_xyz,
-                features = None):
+    def forward(self, xyz, new_xyz, features=None):
         # type: (GroupAll, torch.Tensor, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor]
         r"""
         Parameters

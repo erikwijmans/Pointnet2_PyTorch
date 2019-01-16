@@ -1,3 +1,4 @@
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 import torch
 import torch.nn as nn
 import etw_pytorch_utils as pt_utils
@@ -47,7 +48,7 @@ class Pointnet2MSG(nn.Module):
     """
 
     def __init__(self, num_classes, input_channels=6, use_xyz=True):
-        super().__init__()
+        super(Pointnet2MSG, self).__init__()
 
         self.SA_modules = nn.ModuleList()
         c_in = input_channels
@@ -110,7 +111,8 @@ class Pointnet2MSG(nn.Module):
 
         return xyz, features
 
-    def forward(self, pointcloud: torch.cuda.FloatTensor):
+    def forward(self, pointcloud):
+        # type: (Pointnet2MSG, torch.cuda.FloatTensor) -> pt_utils.Seq
         r"""
             Forward pass of the network
 

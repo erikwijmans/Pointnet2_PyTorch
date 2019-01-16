@@ -11,12 +11,11 @@ try:
     import pointnet2._ext as _ext
 except ImportError:
     if not hasattr(builtins, '__POINTNET2_SETUP__') or not builtins.__POINTNET2_SETUP__:
-        tb = sys.exc_info()[2]
         raise ImportError(
             'Could not import _ext module.\n'
             'Please see the setup instructions in the README: '
-            'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
-        ), None, tb
+            'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst' 
+        )
 
 
 if False:

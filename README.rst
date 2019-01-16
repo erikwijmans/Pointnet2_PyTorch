@@ -17,7 +17,7 @@ The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU us
 Setup
 -----
 
-* Install ``python3.6``
+* Install ``python`` -- This repo is tested with ``2.7``, ``3.5``, and ``3.6``
 
 
 * Install dependencies

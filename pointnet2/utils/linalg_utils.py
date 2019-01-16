@@ -6,9 +6,7 @@ import numpy as np
 PDist2Order = Enum('PDist2Order', 'd_first d_second')
 
 
-def pdist2(X,
-           Z = None,
-           order = PDist2Order.d_second):
+def pdist2(X, Z=None, order=PDist2Order.d_second):
     # type: (torch.Tensor, torch.Tensor, PDist2Order) -> torch.Tensor
     r""" Calculates the pairwise distance between X and Z
 

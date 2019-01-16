@@ -99,7 +99,7 @@ if __name__ == "__main__":
         best_prec = 0
         best_loss = 1e10
     else:
-        start_epoch, best_loss = pt_utils.load_checkpoint(
+        it, start_epoch, best_loss = pt_utils.load_checkpoint(
             model, optimizer, filename=args.checkpoint.split(".")[0])
 
         lr_scheduler = lr_sched.LambdaLR(

@@ -105,21 +105,23 @@ if __name__ == "__main__":
     lr_lbmd = lambda it: max(args.lr_decay**(int(it * args.batch_size / args.decay_step)), lr_clip / args.lr)
     bn_lbmd = lambda it: max(args.bn_momentum * args.bnm_decay**(int(it * args.batch_size / args.decay_step)), bnm_clip)
 
+    it = None
     if args.checkpoint is not None:
         it, start_epoch, best_loss = pt_utils.load_checkpoint(
             model, optimizer, filename=args.checkpoint.split(".")[0])
 
         lr_scheduler = lr_sched.LambdaLR(
-            optimizer, lr_lambda=lr_lbmd, last_epoch=start_epoch)
+            optimizer, lr_lambda=lr_lbmd, last_epoch=it)
         bnm_scheduler = pt_utils.BNMomentumScheduler(
-            model, bn_lambda=bn_lbmd, last_epoch=start_epoch)
+            model, bn_lambda=bn_lbmd, last_epoch=it)
     else:
         lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lambda=lr_lbmd)
         bnm_scheduler = pt_utils.BNMomentumScheduler(model, bn_lambda=bn_lbmd)
 
         best_loss = 1e10
         start_epoch = 1
-
+    it = 0 if it is None else it
+        
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
 
     if args.visdom:
@@ -143,7 +145,7 @@ if __name__ == "__main__":
         viz=viz)
 
     trainer.train(
-        0,
+        it,
         start_epoch,
         args.epochs,
         train_loader,

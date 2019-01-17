@@ -105,23 +105,25 @@ if __name__ == "__main__":
     lr_lbmd = lambda it: max(args.lr_decay**(int(it * args.batch_size / args.decay_step)), lr_clip / args.lr)
     bn_lbmd = lambda it: max(args.bn_momentum * args.bnm_decay**(int(it * args.batch_size / args.decay_step)), bnm_clip)
 
-    it = None
+    # default value
+    it = -1 # for the initialize value of `LambdaLR` and `BNMomentumScheduler`
+    best_loss = 1e10
+    start_epoch = 1
+    
+    # load status from checkpoint
     if args.checkpoint is not None:
-        it, start_epoch, best_loss = pt_utils.load_checkpoint(
+        checkpoint_status = pt_utils.load_checkpoint(
             model, optimizer, filename=args.checkpoint.split(".")[0])
-
-        lr_scheduler = lr_sched.LambdaLR(
-            optimizer, lr_lambda=lr_lbmd, last_epoch=it)
-        bnm_scheduler = pt_utils.BNMomentumScheduler(
-            model, bn_lambda=bn_lbmd, last_epoch=it)
-    else:
-        lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lambda=lr_lbmd)
-        bnm_scheduler = pt_utils.BNMomentumScheduler(model, bn_lambda=bn_lbmd)
-
-        best_loss = 1e10
-        start_epoch = 1
-    it = 0 if it is None else it
+        if checkpoint_status is not None:
+            it, start_epoch, best_loss = checkpoint_status
         
+    lr_scheduler = lr_sched.LambdaLR(
+        optimizer, lr_lambda=lr_lbmd, last_epoch=it)
+    bnm_scheduler = pt_utils.BNMomentumScheduler(
+        model, bn_lambda=bn_lbmd, last_epoch=it)
+    
+    it = max(it, 0) # for the initialize value of `trainer.train`
+    
     model_fn = model_fn_decorator(nn.CrossEntropyLoss())
 
     if args.visdom:

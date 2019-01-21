@@ -58,12 +58,12 @@ class PointcloudRotate(object):
 
         normals = points.size(1) > 3
         if not normals:
-            return np.matmul(points, rotation_matrix.t())
+            return torch.matmul(points, rotation_matrix.t())
         else:
             pc_xyz = points[:, 0:3]
             pc_normals = points[:, 3:]
-            points[:, 0:3] = np.matmul(pc_xyz, rotation_matrix.t())
-            points[:, 3:] = np.matmul(pc_normals, rotation_matrix.t())
+            points[:, 0:3] = torch.matmul(pc_xyz, rotation_matrix.t())
+            points[:, 3:] = torch.matmul(pc_normals, rotation_matrix.t())
 
             return points
 
@@ -85,16 +85,16 @@ class PointcloudRotatePerturbation(object):
         Ry = angle_axis(angles[1], np.array([0.0, 1.0, 0.0]))
         Rz = angle_axis(angles[2], np.array([0.0, 0.0, 1.0]))
 
-        rotation_matrix = np.matmul(np.matmul(Rz, Ry), Rx)
+        rotation_matrix = torch.matmul(torch.matmul(Rz, Ry), Rx)
 
         normals = points.size(1) > 3
         if not normals:
-            return np.matmul(points, rotation_matrix.t())
+            return torch.matmul(points, rotation_matrix.t())
         else:
             pc_xyz = points[:, 0:3]
             pc_normals = points[:, 3:]
-            points[:, 0:3] = np.matmul(pc_xyz, rotation_matrix.t())
-            points[:, 3:] = np.matmul(pc_normals, rotation_matrix.t())
+            points[:, 0:3] = torch.matmul(pc_xyz, rotation_matrix.t())
+            points[:, 3:] = torch.matmul(pc_normals, rotation_matrix.t())
 
             return points
 

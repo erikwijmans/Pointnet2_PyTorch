@@ -1,6 +1,8 @@
 language: python
 python:
   - "3.6"
+before_install:
+  - sudo apt update
 install:
   - pip install black
   - sudo apt install clang-format

@@ -1,4 +1,10 @@
-from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from __future__ import (
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+)
 import torch
 import numpy as np
 
@@ -37,7 +43,6 @@ def angle_axis(angle, axis):
 
 
 class PointcloudScale(object):
-
     def __init__(self, lo=0.8, hi=1.25):
         self.lo, self.hi = lo, hi
 
@@ -48,7 +53,6 @@ class PointcloudScale(object):
 
 
 class PointcloudRotate(object):
-
     def __init__(self, axis=np.array([0.0, 1.0, 0.0])):
         self.axis = axis
 
@@ -69,13 +73,13 @@ class PointcloudRotate(object):
 
 
 class PointcloudRotatePerturbation(object):
-
     def __init__(self, angle_sigma=0.06, angle_clip=0.18):
         self.angle_sigma, self.angle_clip = angle_sigma, angle_clip
 
     def _get_angles(self):
-        angles = np.clip(self.angle_sigma * np.random.randn(3),
-                         -self.angle_clip, self.angle_clip)
+        angles = np.clip(
+            self.angle_sigma * np.random.randn(3), -self.angle_clip, self.angle_clip
+        )
 
         return angles
 
@@ -100,37 +104,35 @@ class PointcloudRotatePerturbation(object):
 
 
 class PointcloudJitter(object):
-
     def __init__(self, std=0.01, clip=0.05):
         self.std, self.clip = std, clip
 
     def __call__(self, points):
-        jittered_data = points.new(points.size(0), 3).normal_(
-            mean=0.0, std=self.std).clamp_(-self.clip, self.clip)
+        jittered_data = (
+            points.new(points.size(0), 3)
+            .normal_(mean=0.0, std=self.std)
+            .clamp_(-self.clip, self.clip)
+        )
         points[:, 0:3] += jittered_data
         return points
 
 
 class PointcloudTranslate(object):
-
     def __init__(self, translate_range=0.1):
         self.translate_range = translate_range
 
     def __call__(self, points):
-        translation = np.random.uniform(-self.translate_range,
-                                        self.translate_range)
+        translation = np.random.uniform(-self.translate_range, self.translate_range)
         points[:, 0:3] += translation
         return points
 
 
 class PointcloudToTensor(object):
-
     def __call__(self, points):
         return torch.from_numpy(points).float()
 
 
 class PointcloudRandomInputDropout(object):
-
     def __init__(self, max_dropout_ratio=0.875):
         assert max_dropout_ratio >= 0 and max_dropout_ratio < 1
         self.max_dropout_ratio = max_dropout_ratio

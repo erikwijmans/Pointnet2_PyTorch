@@ -1,4 +1,4 @@
-dist: precise
+dist: trusty
 sudo: required
 
 language: python
@@ -6,9 +6,9 @@ language: python
 addons:
   apt:
     sources:
-      - llvm-toolchain-precise
+      - llvm-toolchain-trusty
     packages:
-      - clang-format
+      - clang-format-5.0
 
 
 python:

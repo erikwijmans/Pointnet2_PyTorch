@@ -6,16 +6,20 @@ from __future__ import (
     unicode_literals,
 )
 import torch
-import builtins
 from torch.autograd import Function
 import torch.nn as nn
 import etw_pytorch_utils as pt_utils
 import sys
 
 try:
+    import builtins
+except:
+    import __builtin__ as builtins
+
+try:
     import pointnet2._ext as _ext
 except ImportError:
-    if not hasattr(builtins, "__POINTNET2_SETUP__") or not builtins.__POINTNET2_SETUP__:
+    if not getattr(builtins, "__POINTNET2_SETUP__", False):
         raise ImportError(
             "Could not import _ext module.\n"
             "Please see the setup instructions in the README: "

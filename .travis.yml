@@ -1,15 +1,6 @@
 dist: trusty
-sudo: required
 
 language: python
-
-# addons:
-  # apt:
-    # sources:
-      # - llvm-toolchain-trusty
-    # packages:
-      # - clang-format-5.0
-
 
 python:
   - "3.6"

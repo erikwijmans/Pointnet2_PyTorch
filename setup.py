@@ -2,7 +2,11 @@ from __future__ import division, absolute_import, with_statement, print_function
 from setuptools import setup, find_packages
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 import glob
-import builtins
+
+try:
+    import builtins
+except:
+    import __builtin__ as builtins
 
 builtins.__POINTNET2_SETUP__ = True
 import pointnet2
@@ -13,7 +17,14 @@ _ext_sources = glob.glob("{}/src/*.cpp".format(_ext_src_root)) + glob.glob(
 )
 _ext_headers = glob.glob("{}/include/*".format(_ext_src_root))
 
-requirements = ["etw_pytorch_utils==1.1.0", "h5py", "pprint", "enum34", "future"]
+requirements = [
+    "etw_pytorch_utils==1.1.0",
+    "h5py",
+    "pprint",
+    "enum34",
+    "future",
+    "builtins",
+]
 
 setup(
     name="pointnet2",

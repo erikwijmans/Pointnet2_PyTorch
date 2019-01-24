@@ -17,14 +17,7 @@ _ext_sources = glob.glob("{}/src/*.cpp".format(_ext_src_root)) + glob.glob(
 )
 _ext_headers = glob.glob("{}/include/*".format(_ext_src_root))
 
-requirements = [
-    "etw_pytorch_utils==1.1.0",
-    "h5py",
-    "pprint",
-    "enum34",
-    "future",
-    "builtins",
-]
+requirements = ["etw_pytorch_utils==1.1.0", "h5py", "pprint", "enum34", "future"]
 
 setup(
     name="pointnet2",

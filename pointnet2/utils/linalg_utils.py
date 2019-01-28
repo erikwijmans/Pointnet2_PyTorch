@@ -1,9 +1,15 @@
-from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from __future__ import (
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+)
 import torch
 from enum import Enum
 import numpy as np
 
-PDist2Order = Enum('PDist2Order', 'd_first d_second')
+PDist2Order = Enum("PDist2Order", "d_first d_second")
 
 
 def pdist2(X, Z=None, order=PDist2Order.d_second):
@@ -58,7 +64,8 @@ def pdist2(X, Z=None, order=PDist2Order.d_second):
 
 
 def pdist2_slow(X, Z=None):
-    if Z is None: Z = X
+    if Z is None:
+        Z = X
     D = torch.zeros(X.size(0), X.size(2), Z.size(2))
 
     for b in range(D.size(0)):

@@ -1,4 +1,10 @@
-from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from __future__ import (
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+)
 import torch
 import torch.utils.data as data
 import numpy as np
@@ -17,13 +23,12 @@ def _get_data_files(list_filename):
 
 def _load_data_file(name):
     f = h5py.File(name)
-    data = f['data'][:]
-    label = f['label'][:]
+    data = f["data"][:]
+    label = f["label"][:]
     return data, label
 
 
 class ModelNet40Cls(data.Dataset):
-
     def __init__(self, num_points, transforms=None, train=True, download=True):
         super().__init__()
 
@@ -36,20 +41,20 @@ class ModelNet40Cls(data.Dataset):
         if download and not os.path.exists(self.data_dir):
             zipfile = os.path.join(BASE_DIR, os.path.basename(self.url))
             subprocess.check_call(
-                shlex.split("curl {} -o {}".format(self.url, zipfile)))
+                shlex.split("curl {} -o {}".format(self.url, zipfile))
+            )
 
             subprocess.check_call(
-                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR)))
+                shlex.split("unzip {} -d {}".format(zipfile, BASE_DIR))
+            )
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
 
         self.train, self.num_points = train, num_points
         if self.train:
-            self.files =  _get_data_files( \
-                os.path.join(self.data_dir, 'train_files.txt'))
+            self.files = _get_data_files(os.path.join(self.data_dir, "train_files.txt"))
         else:
-            self.files =  _get_data_files( \
-                os.path.join(self.data_dir, 'test_files.txt'))
+            self.files = _get_data_files(os.path.join(self.data_dir, "test_files.txt"))
 
         point_list, label_list = [], []
         for f in self.files:
@@ -83,22 +88,24 @@ class ModelNet40Cls(data.Dataset):
 
     def randomize(self):
         self.actual_number_of_points = min(
-            max(
-                np.random.randint(self.num_points * 0.8, self.num_points * 1.2),
-                1), self.points.shape[1])
+            max(np.random.randint(self.num_points * 0.8, self.num_points * 1.2), 1),
+            self.points.shape[1],
+        )
 
 
 if __name__ == "__main__":
     from torchvision import transforms
     import data_utils as d_utils
 
-    transforms = transforms.Compose([
-        d_utils.PointcloudToTensor(),
-        d_utils.PointcloudRotate(axis=np.array([1, 0, 0])),
-        d_utils.PointcloudScale(),
-        d_utils.PointcloudTranslate(),
-        d_utils.PointcloudJitter()
-    ])
+    transforms = transforms.Compose(
+        [
+            d_utils.PointcloudToTensor(),
+            d_utils.PointcloudRotate(axis=np.array([1, 0, 0])),
+            d_utils.PointcloudScale(),
+            d_utils.PointcloudTranslate(),
+            d_utils.PointcloudJitter(),
+        ]
+    )
     dset = ModelNet40Cls(16, "./", train=True, transforms=transforms)
     print(dset[0][0])
     print(dset[0][1])

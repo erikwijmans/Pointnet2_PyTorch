@@ -61,6 +61,21 @@ Both scripts will print training progress after every epoch to the command line.
 enable logging to visdom and more detailed logging of training progress.
 
 
+Contributing
+------------
+
+This repository uses `black <https://github.com/ambv/black>`_ for linting and style enforcement on python code.
+For c++/cuda code,
+`clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ is used for style.  The simplest way to
+comply with style is via `pre-commit <https://pre-commit.com/>`_
+
+::
+
+  pip install pre-commit
+  pre-commit install
+
+
+
 Citation
 --------
 

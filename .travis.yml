@@ -1,0 +1,11 @@
+dist: trusty
+
+language: python
+
+python:
+  - "3.6"
+install:
+  - pip install black
+script:
+  - black --check .
+  - find . -not -path '*/\.*' | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format --style google {})"

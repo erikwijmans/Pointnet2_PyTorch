@@ -1,20 +1,29 @@
-from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from __future__ import (
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+)
 import torch
-import builtins
 from torch.autograd import Function
 import torch.nn as nn
 import etw_pytorch_utils as pt_utils
 import sys
 
 try:
+    import builtins
+except:
+    import __builtin__ as builtins
+
+try:
     import pointnet2._ext as _ext
 except ImportError:
-    if not hasattr(builtins,
-                   '__POINTNET2_SETUP__') or not builtins.__POINTNET2_SETUP__:
+    if not getattr(builtins, "__POINTNET2_SETUP__", False):
         raise ImportError(
-            'Could not import _ext module.\n'
-            'Please see the setup instructions in the README: '
-            'https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst'
+            "Could not import _ext module.\n"
+            "Please see the setup instructions in the README: "
+            "https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst"
         )
 
 if False:
@@ -23,7 +32,6 @@ if False:
 
 
 class RandomDropout(nn.Module):
-
     def __init__(self, p=0.5, inplace=False):
         super(RandomDropout, self).__init__()
         self.p = p
@@ -31,12 +39,10 @@ class RandomDropout(nn.Module):
 
     def forward(self, X):
         theta = torch.Tensor(1).uniform_(0, self.p)[0]
-        return pt_utils.feature_dropout_no_scaling(X, theta, self.train,
-                                                   self.inplace)
+        return pt_utils.feature_dropout_no_scaling(X, theta, self.train, self.inplace)
 
 
 class FurthestPointSampling(Function):
-
     @staticmethod
     def forward(ctx, xyz, npoint):
         # type: (Any, torch.Tensor, int) -> torch.Tensor
@@ -67,7 +73,6 @@ furthest_point_sample = FurthestPointSampling.apply
 
 
 class GatherOperation(Function):
-
     @staticmethod
     def forward(ctx, features, idx):
         # type: (Any, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -105,7 +110,6 @@ gather_operation = GatherOperation.apply
 
 
 class ThreeNN(Function):
-
     @staticmethod
     def forward(ctx, unknown, known):
         # type: (Any, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
@@ -138,7 +142,6 @@ three_nn = ThreeNN.apply
 
 
 class ThreeInterpolate(Function):
-
     @staticmethod
     def forward(ctx, features, idx, weight):
         # type(Any, torch.Tensor, torch.Tensor, torch.Tensor) -> Torch.Tensor
@@ -185,8 +188,9 @@ class ThreeInterpolate(Function):
         """
         idx, weight, m = ctx.three_interpolate_for_backward
 
-        grad_features = _ext.three_interpolate_grad(grad_out.contiguous(), idx,
-                                                    weight, m)
+        grad_features = _ext.three_interpolate_grad(
+            grad_out.contiguous(), idx, weight, m
+        )
 
         return grad_features, None, None
 
@@ -195,7 +199,6 @@ three_interpolate = ThreeInterpolate.apply
 
 
 class GroupingOperation(Function):
-
     @staticmethod
     def forward(ctx, features, idx):
         # type: (Any, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -247,7 +250,6 @@ grouping_operation = GroupingOperation.apply
 
 
 class BallQuery(Function):
-
     @staticmethod
     def forward(ctx, radius, nsample, xyz, new_xyz):
         # type: (Any, float, int, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -316,19 +318,21 @@ class QueryAndGroup(nn.Module):
 
         idx = ball_query(self.radius, self.nsample, xyz, new_xyz)
         xyz_trans = xyz.transpose(1, 2).contiguous()
-        grouped_xyz = grouping_operation(xyz_trans,
-                                         idx)  # (B, 3, npoint, nsample)
+        grouped_xyz = grouping_operation(xyz_trans, idx)  # (B, 3, npoint, nsample)
         grouped_xyz -= new_xyz.transpose(1, 2).unsqueeze(-1)
 
         if features is not None:
             grouped_features = grouping_operation(features, idx)
             if self.use_xyz:
-                new_features = torch.cat([grouped_xyz, grouped_features],
-                                         dim=1)  # (B, C + 3, npoint, nsample)
+                new_features = torch.cat(
+                    [grouped_xyz, grouped_features], dim=1
+                )  # (B, C + 3, npoint, nsample)
             else:
                 new_features = grouped_features
         else:
-            assert self.use_xyz, "Cannot have not features and not use xyz as a feature!"
+            assert (
+                self.use_xyz
+            ), "Cannot have not features and not use xyz as a feature!"
             new_features = grouped_xyz
 
         return new_features
@@ -369,8 +373,9 @@ class GroupAll(nn.Module):
         if features is not None:
             grouped_features = features.unsqueeze(2)
             if self.use_xyz:
-                new_features = torch.cat([grouped_xyz, grouped_features],
-                                         dim=1)  # (B, 3 + C, 1, N)
+                new_features = torch.cat(
+                    [grouped_xyz, grouped_features], dim=1
+                )  # (B, 3 + C, 1, N)
             else:
                 new_features = grouped_features
         else:

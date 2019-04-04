@@ -39,7 +39,7 @@ class _PointnetSAModuleBase(nn.Module):
         new_xyz : torch.Tensor
             (B, npoint, 3) tensor of the new features' xyz
         new_features : torch.Tensor
-            (B, npoint, \sum_k(mlps[k][-1])) tensor of the new_features descriptors
+            (B,  \sum_k(mlps[k][-1]), npoint) tensor of the new_features descriptors
         """
 
         new_features_list = []

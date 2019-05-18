@@ -27,7 +27,7 @@ parser.add_argument(
     "-num_points",
     type=int,
     default=4096,
-    help="Number of points to train with [default: 2048]",
+    help="Number of points to train with [default: 4096]",
 )
 parser.add_argument(
     "-weight_decay",
@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
     lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lambda=lr_lbmd, last_epoch=it)
     bnm_scheduler = pt_utils.BNMomentumScheduler(
-        model, bn_lambda=bn_lbmd, last_epoch=it
+        model, bn_lambda=bnm_lmbd, last_epoch=it
     )
 
     it = max(it, 0)  # for the initialize value of `trainer.train`
@@ -153,8 +153,8 @@ if __name__ == "__main__":
         model,
         model_fn,
         optimizer,
-        checkpoint_name="checkpoints/pointnet2_smeseg",
-        best_name="checkpoints/poitnet2_semseg_best",
+        checkpoint_name="checkpoints/pointnet2_semseg",
+        best_name="checkpoints/pointnet2_semseg_best",
         lr_scheduler=lr_scheduler,
         bnm_scheduler=bnm_scheduler,
         viz=viz,

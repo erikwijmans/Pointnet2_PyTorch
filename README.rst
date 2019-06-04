@@ -24,7 +24,7 @@ Setup
 
   ::
 
-    pip install -r requirments.txt
+    pip install -r requirements.txt
 
 
 * Building `_ext` module

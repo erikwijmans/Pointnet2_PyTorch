@@ -50,7 +50,8 @@ class ModelNet40Cls(data.Dataset):
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
 
-        self.train, self.num_points = train, num_points
+        self.train = train
+        self.set_num_points(num_points)
         if self.train:
             self.files = _get_data_files(os.path.join(self.data_dir, "train_files.txt"))
         else:
@@ -68,7 +69,7 @@ class ModelNet40Cls(data.Dataset):
         self.randomize()
 
     def __getitem__(self, idx):
-        pt_idxs = np.arange(0, self.actual_number_of_points)
+        pt_idxs = np.arange(0, self.num_points)
         np.random.shuffle(pt_idxs)
 
         current_points = self.points[idx, pt_idxs].copy()
@@ -84,7 +85,6 @@ class ModelNet40Cls(data.Dataset):
 
     def set_num_points(self, pts):
         self.num_points = pts
-        self.actual_number_of_points = pts
 
     def randomize(self):
         pass
@@ -103,7 +103,7 @@ if __name__ == "__main__":
             d_utils.PointcloudJitter(),
         ]
     )
-    dset = ModelNet40Cls(16, "./", train=True, transforms=transforms)
+    dset = ModelNet40Cls(16, train=True, transforms=transforms)
     print(dset[0][0])
     print(dset[0][1])
     print(len(dset))

@@ -50,7 +50,8 @@ class ModelNet40Cls(data.Dataset):
 
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
 
-        self.train, self.num_points = train, num_points
+        self.train = train
+        self.set_num_points(num_points)
         if self.train:
             self.files = _get_data_files(os.path.join(self.data_dir, "train_files.txt"))
         else:

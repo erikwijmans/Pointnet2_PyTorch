@@ -87,7 +87,7 @@ class ModelNet40Cls(data.Dataset):
         self.actual_number_of_points = pts
 
     def randomize(self):
-        pass
+        self.actual_number_of_points = min(self.num_points,self.points.shape[1])
 
 
 if __name__ == "__main__":

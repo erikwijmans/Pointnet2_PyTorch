@@ -51,7 +51,6 @@ class ModelNet40Cls(data.Dataset):
             subprocess.check_call(shlex.split("rm {}".format(zipfile)))
 
         self.train = train
-        self.set_num_points(num_points)
         if self.train:
             self.files = _get_data_files(os.path.join(self.data_dir, "train_files.txt"))
         else:
@@ -65,8 +64,7 @@ class ModelNet40Cls(data.Dataset):
 
         self.points = np.concatenate(point_list, 0)
         self.labels = np.concatenate(label_list, 0)
-
-        self.randomize()
+        self.set_num_points(num_points)
 
     def __getitem__(self, idx):
         pt_idxs = np.arange(0, self.num_points)
@@ -84,7 +82,7 @@ class ModelNet40Cls(data.Dataset):
         return self.points.shape[0]
 
     def set_num_points(self, pts):
-        self.num_points = pts
+        self.num_points = min(self.points.shape[1], pts)
 
     def randomize(self):
         pass

@@ -179,11 +179,17 @@ class PointnetFPModule(nn.Module):
             (B, mlp[-1], n) tensor of the features of the unknown features
         """
 
+        #print(unknown.shape, known.shape, unknow_feats.shape, known_feats.shape)
+
+        #import pdb; pdb.set_trace()
+
         if known is not None:
             dist, idx = pointnet2_utils.three_nn(unknown, known)
             dist_recip = 1.0 / (dist + 1e-8)
             norm = torch.sum(dist_recip, dim=2, keepdim=True)
             weight = dist_recip / norm
+
+            #print(known_feats.shape, idx.shape, weight.shape)
 
             interpolated_feats = pointnet2_utils.three_interpolate(
                 known_feats, idx, weight

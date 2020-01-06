@@ -6,6 +6,7 @@ from __future__ import (
     unicode_literals,
 )
 import torch.optim as optim
+import numpy as np
 import torch.optim.lr_scheduler as lr_sched
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -103,6 +104,10 @@ if __name__ == "__main__":
 
     model = Pointnet(num_classes=13, input_channels=6, use_xyz=True)
     model.cuda()
+    print(model)
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    params = sum([np.prod(p.size()) for p in model_parameters])
+    print("Model size = %i" % params)
     optimizer = optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.weight_decay
     )
@@ -161,7 +166,7 @@ if __name__ == "__main__":
     )
 
     trainer.train(
-        it, start_epoch, args.epochs, train_loader, test_loader, best_loss=best_loss
+        it, start_epoch, args.epochs, train_loader, test_loader=test_loader, best_loss=best_loss
     )
 
     if start_epoch == args.epochs:

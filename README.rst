@@ -17,7 +17,7 @@ The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU us
 Setup
 -----
 
-* Install ``python`` -- This repo is tested with ``2.7``, ``3.5``, and ``3.6``
+* Install ``python`` -- This repo is tested with ``3.5``, and ``3.6``
 
 
 * Install dependencies
@@ -27,11 +27,15 @@ Setup
     pip install -r requirements.txt
 
 
-* Building `_ext` module
+* Building the CUDA kernels
 
   ::
 
-    python setup.py build_ext --inplace
+    pip install pointnet2_ops_lib
+
+    # Or if you would like to install them directly
+
+    pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
 
 
 * Optionally, you can also install this repo as a package
@@ -39,6 +43,10 @@ Setup
   ::
 
     pip install -e .
+
+
+
+
 
 
 Example training

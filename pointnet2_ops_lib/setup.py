@@ -11,7 +11,7 @@ _ext_headers = glob.glob("{}/include/*".format(_ext_src_root))
 
 requirements = []
 
-execfile("pointnet2_ops/_version.py")
+exec(open("pointnet2_ops/_version.py").read())
 
 setup(
     name="pointnet2_ops",

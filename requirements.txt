@@ -1,8 +1,7 @@
-git+git://github.com/erikwijmans/etw_pytorch_utils.git@v1.1.1#egg=etw_pytorch_utils
 h5py
 numpy
-torch>=1.0
 torchvision
 pprint
-enum34
-future
+
+hydra-core
+pytorch-lightning

@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
 
-requirements = ["h5py", "pprint", "enum34", "future"]
+requirements = ["h5py", "pprint", "hydra-core", "pytorch-lightning"]
 
 
-execfile("pointnet2/_version.py")
+exec(open("pointnet2/_version.py").read())
 
 setup(
     name="pointnet2",

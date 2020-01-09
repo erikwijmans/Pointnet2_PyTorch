@@ -1,16 +1,18 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
-import torch
-import torch.nn as nn
-import etw_pytorch_utils as pt_utils
+
 from collections import namedtuple
 
-from pointnet2.utils.pointnet2_modules import PointnetSAModuleMSG, PointnetSAModule
+import etw_pytorch_utils as pt_utils
+import torch
+import torch.nn as nn
+
+from pointnet2.utils.pointnet2_modules import PointnetSAModule, PointnetSAModuleMSG
 
 
 def model_fn_decorator(criterion):

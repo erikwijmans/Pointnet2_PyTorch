@@ -1,17 +1,19 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
+
+import os
+import shlex
+import subprocess
+
+import h5py
+import numpy as np
 import torch
 import torch.utils.data as data
-import numpy as np
-import os
-import h5py
-import subprocess
-import shlex
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

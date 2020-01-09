@@ -1,15 +1,16 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
-import torch
-from torch.autograd import Function
-import torch.nn as nn
-import etw_pytorch_utils as pt_utils
+
 import sys
+
+import torch
+import torch.nn as nn
+from torch.autograd import Function
 
 try:
     import builtins
@@ -29,17 +30,6 @@ except ImportError:
 if False:
     # Workaround for type hints without depending on the `typing` module
     from typing import *
-
-
-class RandomDropout(nn.Module):
-    def __init__(self, p=0.5, inplace=False):
-        super(RandomDropout, self).__init__()
-        self.p = p
-        self.inplace = inplace
-
-    def forward(self, X):
-        theta = torch.Tensor(1).uniform_(0, self.p)[0]
-        return pt_utils.feature_dropout_no_scaling(X, theta, self.train, self.inplace)
 
 
 class FurthestPointSampling(Function):

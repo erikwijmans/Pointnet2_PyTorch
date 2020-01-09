@@ -1,13 +1,14 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
+
+import numpy as np
 import pytest
 import torch
-import numpy as np
 
 pytest_plugins = ["helpers_namespace"]
 

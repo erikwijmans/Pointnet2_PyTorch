@@ -1,13 +1,15 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
-from pointnet2.models.pointnet2_ssg_sem import model_fn_decorator, Pointnet2SSG
-import torch.nn as nn
+
 import pytest
+import torch.nn as nn
+
+from pointnet2.models.pointnet2_ssg_sem import Pointnet2SSG, model_fn_decorator
 
 
 def test_xyz():

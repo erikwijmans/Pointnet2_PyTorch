@@ -1,14 +1,16 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
+
+from collections import namedtuple
+
+import etw_pytorch_utils as pt_utils
 import torch
 import torch.nn as nn
-import etw_pytorch_utils as pt_utils
-from collections import namedtuple
 
 from pointnet2.utils.pointnet2_modules import PointnetSAModule
 

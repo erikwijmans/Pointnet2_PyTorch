@@ -1,12 +1,13 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
-import torch
+
 import numpy as np
+import torch
 
 
 def angle_axis(angle, axis):

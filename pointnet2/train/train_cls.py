@@ -1,26 +1,28 @@
 from __future__ import (
-    division,
     absolute_import,
-    with_statement,
+    division,
     print_function,
     unicode_literals,
+    with_statement,
 )
+
+import argparse
+import os
+import os.path as osp
+import pprint
+
+import etw_pytorch_utils as pt_utils
 import torch
+import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_sched
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
-import etw_pytorch_utils as pt_utils
-import pprint
-import os.path as osp
-import os
-import argparse
 
+import pointnet2.data.data_utils as d_utils
+from pointnet2.data import ModelNet40Cls
 from pointnet2.models import Pointnet2ClsMSG as Pointnet
 from pointnet2.models.pointnet2_msg_cls import model_fn_decorator
-from pointnet2.data import ModelNet40Cls
-import pointnet2.data.data_utils as d_utils
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True

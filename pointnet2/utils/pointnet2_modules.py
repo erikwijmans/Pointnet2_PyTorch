@@ -32,7 +32,7 @@ class _PointnetSAModuleBase(nn.Module):
         xyz : torch.Tensor
             (B, N, 3) tensor of the xyz coordinates of the features
         features : torch.Tensor
-            (B, N, C) tensor of the descriptors of the the features
+            (B, C, N) tensor of the descriptors of the the features
 
         Returns
         -------

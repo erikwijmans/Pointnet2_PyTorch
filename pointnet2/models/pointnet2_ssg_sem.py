@@ -95,7 +95,7 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
             dset,
             batch_size=self.hparams.batch_size,
             shuffle=mode == "train",
-            num_workers=2,
+            num_workers=4,
             pin_memory=True,
             drop_last=mode == "train",
         )

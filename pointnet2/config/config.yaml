@@ -3,6 +3,9 @@ defaults:
     - model: ssg
     - task_model: ${defaults.0.task}-${defaults.1.model}
 
+hydra:
+  run:
+    dir: outputs
 
 gpus:
     - 0

@@ -16,10 +16,18 @@ def main(cfg):
     model = hydra.utils.instantiate(cfg.task_model, cfg)
 
     early_stop_callback = pl.callbacks.EarlyStopping(patience=5)
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        monitor="val_acc",
+        mode="max",
+        save_top_k=2,
+        filepath=cfg.task_model.name,
+        verbose=True,
+    )
     trainer = pl.Trainer(
         gpus=list(cfg.gpus),
-        max_nb_epochs=cfg.epochs,
+        max_epochs=cfg.epochs,
         early_stop_callback=early_stop_callback,
+        checkpoint_callback=checkpoint_callback,
         distributed_backend=cfg.distrib_backend,
     )
 

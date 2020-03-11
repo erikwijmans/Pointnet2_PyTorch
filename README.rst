@@ -27,23 +27,9 @@ Setup
     pip install -r requirements.txt
 
 
-* Building the CUDA kernels
-
-  ::
-
-    pip install pointnet2_ops_lib/.
-
-    # Or if you would like to install them directly (this can also be used in a requirements.txt)
-
-    pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
-
-
-
-
 
 Example training
 ----------------
-
 
 Install with: ``pip install -e .``
 
@@ -75,6 +61,21 @@ Multi-GPU training can be enabled by passing a list of GPU ids to use, for insta
 ::
 
   python pointnet2/train.py task=cls gpus=[0,1,2,3]
+
+
+Building only the CUDA kernels
+----------------------------------
+
+
+  ::
+
+    pip install pointnet2_ops_lib/.
+
+    # Or if you would like to install them directly (this can also be used in a requirements.txt)
+
+    pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+
 
 
 Contributing

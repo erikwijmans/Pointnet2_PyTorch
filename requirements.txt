@@ -1,6 +1,4 @@
 numpy
-torchvision
-pprint
 msgpack-numpy
 lmdb
 

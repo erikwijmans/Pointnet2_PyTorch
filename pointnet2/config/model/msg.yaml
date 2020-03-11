@@ -1,1 +1,2 @@
-model: msg
+model:
+    use_xyz: True

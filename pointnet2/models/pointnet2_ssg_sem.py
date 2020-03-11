@@ -13,12 +13,20 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
         self.SA_modules = nn.ModuleList()
         self.SA_modules.append(
             PointnetSAModule(
-                npoint=1024, radius=0.1, nsample=32, mlp=[6, 32, 32, 64], use_xyz=True
+                npoint=1024,
+                radius=0.1,
+                nsample=32,
+                mlp=[6, 32, 32, 64],
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
         self.SA_modules.append(
             PointnetSAModule(
-                npoint=256, radius=0.2, nsample=32, mlp=[64, 64, 64, 128], use_xyz=True
+                npoint=256,
+                radius=0.2,
+                nsample=32,
+                mlp=[64, 64, 64, 128],
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
         self.SA_modules.append(
@@ -27,7 +35,7 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
                 radius=0.4,
                 nsample=32,
                 mlp=[128, 128, 128, 256],
-                use_xyz=True,
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
         self.SA_modules.append(
@@ -36,7 +44,7 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
                 radius=0.8,
                 nsample=32,
                 mlp=[256, 256, 256, 512],
-                use_xyz=True,
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
 

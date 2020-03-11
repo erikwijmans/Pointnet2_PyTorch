@@ -1,9 +1,16 @@
 defaults:
-    - model: ssg
     - task: cls
+    - model: ssg
+    - task_model: ${defaults.0.task}-${defaults.1.model}
 
 
 gpus:
     - 0
+
+optimizer: ???
+
+task_model: ???
+
+model: ???
 
 distrib_backend: dp

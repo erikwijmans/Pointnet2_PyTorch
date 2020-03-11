@@ -1,0 +1,9 @@
+defaults:
+    - model: ssg
+    - task: cls
+
+
+gpus:
+    - 0
+
+distrib_backend: dp

@@ -25,8 +25,9 @@ at::Tensor group_points(at::Tensor points, at::Tensor idx) {
 
   if (points.type().is_cuda()) {
     group_points_kernel_wrapper(points.size(0), points.size(1), points.size(2),
-                                idx.size(1), idx.size(2), points.data<float>(),
-                                idx.data<int>(), output.data<float>());
+                                idx.size(1), idx.size(2),
+                                points.data_ptr<float>(), idx.data_ptr<int>(),
+                                output.data_ptr<float>());
   } else {
     AT_CHECK(false, "CPU not supported");
   }
@@ -51,7 +52,8 @@ at::Tensor group_points_grad(at::Tensor grad_out, at::Tensor idx, const int n) {
   if (grad_out.type().is_cuda()) {
     group_points_grad_kernel_wrapper(
         grad_out.size(0), grad_out.size(1), n, idx.size(1), idx.size(2),
-        grad_out.data<float>(), idx.data<int>(), output.data<float>());
+        grad_out.data_ptr<float>(), idx.data_ptr<int>(),
+        output.data_ptr<float>());
   } else {
     AT_CHECK(false, "CPU not supported");
   }

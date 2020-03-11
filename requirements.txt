@@ -1,7 +1,10 @@
-h5py
 numpy
 torchvision
 pprint
+msgpack-numpy
+lmdb
 
 hydra-core
 pytorch-lightning
+
+./pointnet2_ops_lib/.

@@ -1,12 +1,11 @@
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-    with_statement,
-)
+from pointnet2.models.pointnet2_msg_cls import PointNet2ClassificationMSG
+from pointnet2.models.pointnet2_msg_sem import PointNet2SemSegMSG
+from pointnet2.models.pointnet2_ssg_cls import PointNet2ClassificationSSG
+from pointnet2.models.pointnet2_ssg_sem import PointNet2SemSegSSG
 
-from .pointnet2_msg_cls import Pointnet2MSG as Pointnet2ClsMSG
-from .pointnet2_msg_sem import Pointnet2MSG as Pointnet2SemMSG
-from .pointnet2_ssg_cls import Pointnet2SSG as Pointnet2ClsSSG
-from .pointnet2_ssg_sem import Pointnet2SSG as Pointnet2SemSSG
+models = {
+    "ssg-classification": PointNet2ClassificationSSG,
+    "msg-classification": PointNet2ClassificationMSG,
+    "ssg-semantic_segmentation": PointNet2SemSegSSG,
+    "msg-semantic_segmentation": PointNet2SemSegMSG,
+}

@@ -1,9 +1,11 @@
+import os.path as osp
+
 from setuptools import find_packages, setup
 
 requirements = ["h5py", "pprint", "hydra-core", "pytorch-lightning"]
 
 
-exec(open("pointnet2/_version.py").read())
+exec(open(osp.join("pointnet2", "_version.py")).read())
 
 setup(
     name="pointnet2",

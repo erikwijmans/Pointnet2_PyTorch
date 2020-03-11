@@ -1,35 +1,36 @@
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-    with_statement,
-)
-
 import sys
+import warnings
+from typing import *
 
 import torch
 import torch.nn as nn
 from torch.autograd import Function
 
 try:
-    import builtins
-except:
-    import __builtin__ as builtins
-
-try:
-    import pointnet2._ext as _ext
+    import pointnet2_ops._ext as _ext
 except ImportError:
-    if not getattr(builtins, "__POINTNET2_SETUP__", False):
-        raise ImportError(
-            "Could not import _ext module.\n"
-            "Please see the setup instructions in the README: "
-            "https://github.com/erikwijmans/Pointnet2_PyTorch/blob/master/README.rst"
-        )
+    from torch.utils.cpp_extension import load
+    import glob
+    import os.path as osp
+    import os
 
-if False:
-    # Workaround for type hints without depending on the `typing` module
-    from typing import *
+    warnings.warn("Unable to load pointnet2_ops cpp extension. JIT Compiling.")
+
+    _ext_src_root = osp.join(osp.dirname(__file__), "_ext-src")
+    _ext_sources = glob.glob(osp.join(_ext_src_root, "src", "*.cpp")) + glob.glob(
+        osp.join(_ext_src_root, "src", "*.cu")
+    )
+    _ext_headers = glob.glob(osp.join(_ext_src_root, "include", "*"))
+
+    os.environ["TORCH_CUDA_ARCH_LIST"] = "3.7+PTX;5.0;6.0;6.1;6.2;7.0;7.5"
+    _ext = load(
+        "_ext",
+        sources=_ext_sources,
+        extra_include_paths=[osp.join(_ext_src_root, "include")],
+        extra_cflags=["-O3"],
+        extra_cuda_cflags=["-O3", "-Xfatbin", "-compress-all"],
+        with_cuda=True,
+    )
 
 
 class FurthestPointSampling(Function):

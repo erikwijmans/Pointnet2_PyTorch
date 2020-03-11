@@ -1,76 +1,24 @@
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-    with_statement,
-)
-
-from collections import namedtuple
-
-import etw_pytorch_utils as pt_utils
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+from pointnet2_ops.pointnet2_modules import PointnetFPModule, PointnetSAModule
+from torch.utils.data import DataLoader
 
-from pointnet2.utils.pointnet2_modules import PointnetFPModule, PointnetSAModule
-
-
-def model_fn_decorator(criterion):
-    ModelReturn = namedtuple("ModelReturn", ["preds", "loss", "acc"])
-
-    def model_fn(model, data, epoch=0, eval=False):
-        with torch.set_grad_enabled(not eval):
-            inputs, labels = data
-            inputs = inputs.to("cuda", non_blocking=True)
-            labels = labels.to("cuda", non_blocking=True)
-
-            preds = model(inputs)
-            loss = criterion(preds.view(labels.numel(), -1), labels.view(-1))
-
-            _, classes = torch.max(preds, -1)
-            acc = (classes == labels).float().sum() / labels.numel()
-
-            return ModelReturn(preds, loss, {"acc": acc.item(), "loss": loss.item()})
-
-    return model_fn
+from pointnet2.data import Indoor3DSemSeg
+from pointnet2.models.pointnet2_ssg_cls import PointNet2ClassificationSSG
 
 
-class Pointnet2SSG(nn.Module):
-    r"""
-        PointNet2 with single-scale grouping
-        Semantic segmentation network that uses feature propogation layers
-
-        Parameters
-        ----------
-        num_classes: int
-            Number of semantics classes to predict over -- size of softmax classifier that run for each point
-        input_channels: int = 6
-            Number of input channels in the feature descriptor for each point.  If the point cloud is Nx9, this
-            value should be 6 as in an Nx9 point cloud, 3 of the channels are xyz, and 6 are feature descriptors
-        use_xyz: bool = True
-            Whether or not to use the xyz position of a point as a feature
-    """
-
-    def __init__(self, num_classes, input_channels=3, use_xyz=True):
-        super(Pointnet2SSG, self).__init__()
-
+class PointNet2SemSegSSG(PointNet2ClassificationSSG):
+    def _build_model(self):
         self.SA_modules = nn.ModuleList()
         self.SA_modules.append(
             PointnetSAModule(
-                npoint=1024,
-                radius=0.1,
-                nsample=32,
-                mlp=[input_channels, 32, 32, 64],
-                use_xyz=use_xyz,
+                npoint=1024, radius=0.1, nsample=32, mlp=[6, 32, 32, 64], use_xyz=True
             )
         )
         self.SA_modules.append(
             PointnetSAModule(
-                npoint=256,
-                radius=0.2,
-                nsample=32,
-                mlp=[64, 64, 64, 128],
-                use_xyz=use_xyz,
+                npoint=256, radius=0.2, nsample=32, mlp=[64, 64, 64, 128], use_xyz=True
             )
         )
         self.SA_modules.append(
@@ -79,7 +27,7 @@ class Pointnet2SSG(nn.Module):
                 radius=0.4,
                 nsample=32,
                 mlp=[128, 128, 128, 256],
-                use_xyz=use_xyz,
+                use_xyz=True,
             )
         )
         self.SA_modules.append(
@@ -88,33 +36,25 @@ class Pointnet2SSG(nn.Module):
                 radius=0.8,
                 nsample=32,
                 mlp=[256, 256, 256, 512],
-                use_xyz=use_xyz,
+                use_xyz=True,
             )
         )
 
         self.FP_modules = nn.ModuleList()
-        self.FP_modules.append(
-            PointnetFPModule(mlp=[128 + input_channels, 128, 128, 128])
-        )
+        self.FP_modules.append(PointnetFPModule(mlp=[128 + 6, 128, 128, 128]))
         self.FP_modules.append(PointnetFPModule(mlp=[256 + 64, 256, 128]))
         self.FP_modules.append(PointnetFPModule(mlp=[256 + 128, 256, 256]))
         self.FP_modules.append(PointnetFPModule(mlp=[512 + 256, 256, 256]))
 
-        self.FC_layer = (
-            pt_utils.Seq(128)
-            .conv1d(128, bn=True)
-            .dropout()
-            .conv1d(num_classes, activation=None)
+        self.fc_lyaer = nn.Sequential(
+            nn.Conv1d(128, 128, kernel_size=1, bias=False),
+            nn.BatchNorm1d(128),
+            nn.ReLU(True),
+            nn.Dropout(0.5),
+            nn.Conv1d(128, 13, kernel_size=1),
         )
 
-    def _break_up_pc(self, pc):
-        xyz = pc[..., 0:3].contiguous()
-        features = pc[..., 3:].transpose(1, 2).contiguous() if pc.size(-1) > 3 else None
-
-        return xyz, features
-
     def forward(self, pointcloud):
-        # type: (Pointnet2SSG, torch.cuda.FloatTensor) -> pt_utils.Seq
         r"""
             Forward pass of the network
 
@@ -139,4 +79,15 @@ class Pointnet2SSG(nn.Module):
                 l_xyz[i - 1], l_xyz[i], l_features[i - 1], l_features[i]
             )
 
-        return self.FC_layer(l_features[0]).transpose(1, 2).contiguous()
+        return self.fc_lyaer(l_features[0])
+
+    def _build_dataloader(self, mode="train"):
+        dset = Indoor3DSemSeg(self.hparams.num_points, train=mode == "train")
+        return DataLoader(
+            dset,
+            batch_size=self.hparams.batch_size,
+            shuffle=mode == "train",
+            num_workers=2,
+            pin_memory=True,
+            drop_last=mode == "train",
+        )

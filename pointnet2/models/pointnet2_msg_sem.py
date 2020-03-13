@@ -54,7 +54,7 @@ class PointNet2SemSegMSG(PointNet2SemSegSSG):
                 radii=[0.4, 0.8],
                 nsamples=[16, 32],
                 mlps=[[c_in, 256, 256, 512], [c_in, 256, 384, 512]],
-                use_xyz=True,
+                use_xyz=self.hparams.use_xyz,
             )
         )
         c_out_3 = 512 + 512

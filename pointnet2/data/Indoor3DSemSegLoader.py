@@ -1,17 +1,11 @@
-from __future__ import (
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-)
+import os
+import shlex
+import subprocess
+
+import h5py
+import numpy as np
 import torch
 import torch.utils.data as data
-import numpy as np
-import os
-import h5py
-import subprocess
-import shlex
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -85,12 +79,8 @@ class Indoor3DSemSeg(data.Dataset):
         pt_idxs = np.arange(0, self.num_points)
         np.random.shuffle(pt_idxs)
 
-        current_points = torch.from_numpy(self.points[idx, pt_idxs].copy()).type(
-            torch.FloatTensor
-        )
-        current_labels = torch.from_numpy(self.labels[idx, pt_idxs].copy()).type(
-            torch.LongTensor
-        )
+        current_points = torch.from_numpy(self.points[idx, pt_idxs].copy()).float()
+        current_labels = torch.from_numpy(self.labels[idx, pt_idxs].copy()).long()
 
         return current_points, current_labels
 

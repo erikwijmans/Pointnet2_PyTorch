@@ -1,57 +1,15 @@
-from __future__ import (
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-)
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import etw_pytorch_utils as pt_utils
-from collections import namedtuple
+import torch.nn.functional as F
+from pointnet2_ops.pointnet2_modules import PointnetSAModule, PointnetSAModuleMSG
 
-from pointnet2.utils.pointnet2_modules import PointnetSAModuleMSG, PointnetSAModule
-
-
-def model_fn_decorator(criterion):
-    ModelReturn = namedtuple("ModelReturn", ["preds", "loss", "acc"])
-
-    def model_fn(model, data, epoch=0, eval=False):
-        with torch.set_grad_enabled(not eval):
-            inputs, labels = data
-            inputs = inputs.to("cuda", non_blocking=True)
-            labels = labels.to("cuda", non_blocking=True)
-
-            preds = model(inputs)
-            labels = labels.view(-1)
-            loss = criterion(preds, labels)
-
-            _, classes = torch.max(preds, -1)
-            acc = (classes == labels).float().sum() / labels.numel()
-
-            return ModelReturn(preds, loss, {"acc": acc.item(), "loss": loss.item()})
-
-    return model_fn
+from pointnet2.models.pointnet2_ssg_cls import PointNet2ClassificationSSG
 
 
-class Pointnet2MSG(nn.Module):
-    r"""
-        PointNet2 with multi-scale grouping
-        Classification network
-
-        Parameters
-        ----------
-        num_classes: int
-            Number of semantics classes to predict over -- size of softmax classifier
-        input_channels: int = 3
-            Number of input channels in the feature descriptor for each point.  If the point cloud is Nx9, this
-            value should be 6 as in an Nx9 point cloud, 3 of the channels are xyz, and 6 are feature descriptors
-        use_xyz: bool = True
-            Whether or not to use the xyz position of a point as a feature
-    """
-
-    def __init__(self, num_classes, input_channels=3, use_xyz=True):
-        super(Pointnet2MSG, self).__init__()
+class PointNet2ClassificationMSG(PointNet2ClassificationSSG):
+    def _build_model(self):
+        super()._build_model()
 
         self.SA_modules = nn.ModuleList()
         self.SA_modules.append(
@@ -59,12 +17,8 @@ class Pointnet2MSG(nn.Module):
                 npoint=512,
                 radii=[0.1, 0.2, 0.4],
                 nsamples=[16, 32, 128],
-                mlps=[
-                    [input_channels, 32, 32, 64],
-                    [input_channels, 64, 64, 128],
-                    [input_channels, 64, 96, 128],
-                ],
-                use_xyz=use_xyz,
+                mlps=[[3, 32, 32, 64], [3, 64, 64, 128], [3, 64, 96, 128]],
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
 
@@ -79,44 +33,12 @@ class Pointnet2MSG(nn.Module):
                     [input_channels, 128, 128, 256],
                     [input_channels, 128, 128, 256],
                 ],
-                use_xyz=use_xyz,
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
         self.SA_modules.append(
-            PointnetSAModule(mlp=[128 + 256 + 256, 256, 512, 1024], use_xyz=use_xyz)
+            PointnetSAModule(
+                mlp=[128 + 256 + 256, 256, 512, 1024],
+                use_xyz=self.hparams.model.use_xyz,
+            )
         )
-
-        self.FC_layer = (
-            pt_utils.Seq(1024)
-            .fc(512, bn=True)
-            .dropout(0.5)
-            .fc(256, bn=True)
-            .dropout(0.5)
-            .fc(num_classes, activation=None)
-        )
-
-    def _break_up_pc(self, pc):
-        xyz = pc[..., 0:3].contiguous()
-        features = pc[..., 3:].transpose(1, 2).contiguous() if pc.size(-1) > 3 else None
-
-        return xyz, features
-
-    def forward(self, pointcloud):
-        # type: (Pointnet2MSG, torch.cuda.FloatTensor) -> pt_utils.Seq
-        r"""
-            Forward pass of the network
-
-            Parameters
-            ----------
-            pointcloud: Variable(torch.cuda.FloatTensor)
-                (B, N, 3 + input_channels) tensor
-                Point cloud to run predicts on
-                Each point in the point-cloud MUST
-                be formated as (x, y, z, features...)
-        """
-        xyz, features = self._break_up_pc(pointcloud)
-
-        for module in self.SA_modules:
-            xyz, features = module(xyz, features)
-
-        return self.FC_layer(features.squeeze(-1))

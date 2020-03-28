@@ -1,20 +1,22 @@
-from __future__ import (
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-)
+from typing import List, Optional, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import etw_pytorch_utils as pt_utils
+from pointnet2_ops import pointnet2_utils
 
-from pointnet2.utils import pointnet2_utils
 
-if False:
-    # Workaround for type hints without depending on the `typing` module
-    from typing import *
+def build_shared_mlp(mlp_spec: List[int], bn: bool = True):
+    layers = []
+    for i in range(1, len(mlp_spec)):
+        layers.append(
+            nn.Conv2d(mlp_spec[i - 1], mlp_spec[i], kernel_size=1, bias=not bn)
+        )
+        if bn:
+            layers.append(nn.BatchNorm2d(mlp_spec[i]))
+        layers.append(nn.ReLU(True))
+
+    return nn.Sequential(*layers)
 
 
 class _PointnetSAModuleBase(nn.Module):
@@ -24,8 +26,9 @@ class _PointnetSAModuleBase(nn.Module):
         self.groupers = None
         self.mlps = None
 
-    def forward(self, xyz, features=None):
-        # type: (_PointnetSAModuleBase, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
+    def forward(
+        self, xyz: torch.Tensor, features: Optional[torch.Tensor]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         r"""
         Parameters
         ----------
@@ -109,7 +112,7 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
             if use_xyz:
                 mlp_spec[0] += 3
 
-            self.mlps.append(pt_utils.SharedMLP(mlp_spec, bn=bn))
+            self.mlps.append(build_shared_mlp(mlp_spec, bn))
 
 
 class PointnetSAModule(PointnetSAModuleMSG):
@@ -157,7 +160,7 @@ class PointnetFPModule(nn.Module):
     def __init__(self, mlp, bn=True):
         # type: (PointnetFPModule, List[int], bool) -> None
         super(PointnetFPModule, self).__init__()
-        self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
+        self.mlp = build_shared_mlp(mlp, bn=bn)
 
     def forward(self, unknown, known, unknow_feats, known_feats):
         # type: (PointnetFPModule, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -204,31 +207,3 @@ class PointnetFPModule(nn.Module):
         new_features = self.mlp(new_features)
 
         return new_features.squeeze(-1)
-
-
-if __name__ == "__main__":
-    from torch.autograd import Variable
-
-    torch.manual_seed(1)
-    torch.cuda.manual_seed_all(1)
-    xyz = Variable(torch.randn(2, 9, 3).cuda(), requires_grad=True)
-    xyz_feats = Variable(torch.randn(2, 9, 6).cuda(), requires_grad=True)
-
-    test_module = PointnetSAModuleMSG(
-        npoint=2, radii=[5.0, 10.0], nsamples=[6, 3], mlps=[[9, 3], [9, 6]]
-    )
-    test_module.cuda()
-    print(test_module(xyz, xyz_feats))
-
-    #  test_module = PointnetFPModule(mlp=[6, 6])
-    #  test_module.cuda()
-    #  from torch.autograd import gradcheck
-    #  inputs = (xyz, xyz, None, xyz_feats)
-    #  test = gradcheck(test_module, inputs, eps=1e-6, atol=1e-4)
-    #  print(test)
-
-    for _ in range(1):
-        _, new_features = test_module(xyz, xyz_feats)
-        new_features.backward(torch.cuda.FloatTensor(*new_features.size()).fill_(1))
-        print(new_features)
-        print(xyz.grad)

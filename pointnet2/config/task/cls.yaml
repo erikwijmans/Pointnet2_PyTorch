@@ -1,0 +1,12 @@
+optimizer:
+    weight_decay: 0.0
+    lr: 1e-3
+    lr_decay: 0.7
+    bn_momentum: 0.5
+    bnm_decay: 0.5
+    decay_step: 2e4
+
+
+num_points: 4096
+epochs: 200
+batch_size: 32

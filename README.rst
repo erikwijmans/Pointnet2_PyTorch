@@ -17,7 +17,7 @@ The custom ops used by Pointnet++ are currently **ONLY** supported on the GPU us
 Setup
 -----
 
-* Install ``python`` -- This repo is tested with ``2.7``, ``3.5``, and ``3.6``
+* Install ``python`` -- This repo is tested with ``3.6``
 
 
 * Install dependencies
@@ -27,38 +27,55 @@ Setup
     pip install -r requirements.txt
 
 
-* Building `_ext` module
-
-  ::
-
-    python setup.py build_ext --inplace
-
-
-* Optionally, you can also install this repo as a package
-
-  ::
-
-    pip install -e .
-
 
 Example training
-------------------
+----------------
 
-Two training examples are provided by ``pointnet2/train/train_sem_seg.py`` and ``pointnet2/train/train_cls.py``.
-The datasets for both will be downloaded automatically by default.
+Install with: ``pip install -e .``
+
+There example training script can be found in ``pointnet2/train.py``.  The training examples are built
+using `PyTorch Lightning <https://github.com/williamFalcon/pytorch-lightning>`_ and `Hydra <https://hydra.cc/>`_.
 
 
-They can be run via
+A classifion pointnet can be trained as
 
 ::
 
-  python -m pointnet2.train.train_cls
+  python pointnet2/train.py task=cls
 
-  python -m pointnet2.train.train_sem_seg
+  # Or with model=msg for multi-scale grouping
+
+  python pointnet2/train.py task=cls model=msg
 
 
-Both scripts will print training progress after every epoch to the command line.  Use the ``--visdom`` flag to
-enable logging to visdom and more detailed logging of training progress.
+Similarly, semantic segmentation can be trained by changing the task to ``semseg``
+
+::
+
+  python pointnet2/train.py task=semseg
+
+
+
+Multi-GPU training can be enabled by passing a list of GPU ids to use, for instance
+
+::
+
+  python pointnet2/train.py task=cls gpus=[0,1,2,3]
+
+
+Building only the CUDA kernels
+----------------------------------
+
+
+  ::
+
+    pip install pointnet2_ops_lib/.
+
+    # Or if you would like to install them directly (this can also be used in a requirements.txt)
+
+    pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+
 
 
 Contributing

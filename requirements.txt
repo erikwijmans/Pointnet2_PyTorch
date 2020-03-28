@@ -1,8 +1,8 @@
-git+git://github.com/erikwijmans/etw_pytorch_utils.git@v1.1.1#egg=etw_pytorch_utils
-h5py
 numpy
-torch>=1.0
-torchvision
-pprint
-enum34
-future
+msgpack-numpy
+lmdb
+
+hydra-core
+pytorch-lightning
+
+./pointnet2_ops_lib/.

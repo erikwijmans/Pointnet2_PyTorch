@@ -1,1 +1,1 @@
-graft pointnet2/_ext-src/include/
+graft pointnet2/config/

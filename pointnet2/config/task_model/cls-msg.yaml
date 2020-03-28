@@ -1,0 +1,3 @@
+task_model:
+    class: pointnet2.models.PointNet2ClassificationMSG
+    name: cls-msg

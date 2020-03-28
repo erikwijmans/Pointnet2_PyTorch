@@ -1,66 +1,74 @@
-from __future__ import (
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-)
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import etw_pytorch_utils as pt_utils
-from collections import namedtuple
+import torch.nn.functional as F
+import torch.optim.lr_scheduler as lr_sched
+from pointnet2_ops.pointnet2_modules import PointnetFPModule, PointnetSAModule
+from torch.utils.data import DataLoader, DistributedSampler
+from torchvision import transforms
 
-from pointnet2.utils.pointnet2_modules import PointnetSAModule
-
-
-def model_fn_decorator(criterion):
-    ModelReturn = namedtuple("ModelReturn", ["preds", "loss", "acc"])
-
-    def model_fn(model, data, epoch=0, eval=False):
-        with torch.set_grad_enabled(not eval):
-            inputs, labels = data
-            inputs = inputs.to("cuda", non_blocking=True)
-            labels = labels.to("cuda", non_blocking=True)
-
-            preds = model(inputs)
-            labels = labels.view(-1)
-            loss = criterion(preds, labels)
-
-            _, classes = torch.max(preds, -1)
-            acc = (classes == labels).float().sum() / labels.numel()
-
-            return ModelReturn(preds, loss, {"acc": acc.item(), "loss": loss.item()})
-
-    return model_fn
+import pointnet2.data.data_utils as d_utils
+from pointnet2.data.ModelNet40Loader import ModelNet40Cls
 
 
-class Pointnet2SSG(nn.Module):
-    r"""
-        PointNet2 with single-scale grouping
-        Classification network
+def set_bn_momentum_default(bn_momentum):
+    def fn(m):
+        if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+            m.momentum = bn_momentum
 
-        Parameters
-        ----------
-        num_classes: int
-            Number of semantics classes to predict over -- size of softmax classifier
-        input_channels: int = 3
-            Number of input channels in the feature descriptor for each point.  If the point cloud is Nx9, this
-            value should be 6 as in an Nx9 point cloud, 3 of the channels are xyz, and 6 are feature descriptors
-        use_xyz: bool = True
-            Whether or not to use the xyz position of a point as a feature
-    """
+    return fn
 
-    def __init__(self, num_classes, input_channels=3, use_xyz=True):
-        super(Pointnet2SSG, self).__init__()
 
+class BNMomentumScheduler:
+    def __init__(self, model, bn_lambda, last_epoch=-1, setter=set_bn_momentum_default):
+        if not isinstance(model, nn.Module):
+            raise RuntimeError(
+                "Class '{}' is not a PyTorch nn Module".format(type(model)._name_)
+            )
+
+        self.model = model
+        self.setter = setter
+        self.lmbd = bn_lambda
+
+        self.step(last_epoch + 1)
+        self.last_epoch = last_epoch
+
+    def step(self, epoch=None):
+        if epoch is None:
+            epoch = self.last_epoch + 1
+
+        self.last_epoch = epoch
+        self.model.apply(self.setter(self.lmbd(epoch)))
+
+    def state_dict(self):
+        return dict(last_epoch=self.last_epoch)
+
+    def load_state_dict(self, state):
+        self.last_epoch = state["last_epoch"]
+        self.step(self.last_epoch)
+
+
+lr_clip = 1e-5
+bnm_clip = 1e-2
+
+
+class PointNet2ClassificationSSG(pl.LightningModule):
+    def __init__(self, args):
+        super().__init__()
+
+        self.hparams = args
+
+        self._build_model()
+
+    def _build_model(self):
         self.SA_modules = nn.ModuleList()
         self.SA_modules.append(
             PointnetSAModule(
                 npoint=512,
                 radius=0.2,
                 nsample=64,
-                mlp=[input_channels, 64, 64, 128],
-                use_xyz=use_xyz,
+                mlp=[3, 64, 64, 128],
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
         self.SA_modules.append(
@@ -69,20 +77,24 @@ class Pointnet2SSG(nn.Module):
                 radius=0.4,
                 nsample=64,
                 mlp=[128, 128, 128, 256],
-                use_xyz=use_xyz,
+                use_xyz=self.hparams.model.use_xyz,
             )
         )
         self.SA_modules.append(
-            PointnetSAModule(mlp=[256, 256, 512, 1024], use_xyz=use_xyz)
+            PointnetSAModule(
+                mlp=[256, 256, 512, 1024], use_xyz=self.hparams.model.use_xyz
+            )
         )
 
-        self.FC_layer = (
-            pt_utils.Seq(1024)
-            .fc(512, bn=True)
-            .dropout(0.5)
-            .fc(256, bn=True)
-            .dropout(0.5)
-            .fc(num_classes, activation=None)
+        self.fc_layer = nn.Sequential(
+            nn.Linear(1024, 512, bias=False),
+            nn.BatchNorm1d(512),
+            nn.ReLU(True),
+            nn.Linear(512, 256, bias=False),
+            nn.BatchNorm1d(256),
+            nn.ReLU(True),
+            nn.Dropout(0.5),
+            nn.Linear(256, 40),
         )
 
     def _break_up_pc(self, pc):
@@ -92,7 +104,6 @@ class Pointnet2SSG(nn.Module):
         return xyz, features
 
     def forward(self, pointcloud):
-        # type: (Pointnet2SSG, torch.cuda.FloatTensor) -> pt_utils.Seq
         r"""
             Forward pass of the network
 
@@ -109,4 +120,110 @@ class Pointnet2SSG(nn.Module):
         for module in self.SA_modules:
             xyz, features = module(xyz, features)
 
-        return self.FC_layer(features.squeeze(-1))
+        return self.fc_layer(features.squeeze(-1))
+
+    def training_step(self, batch, batch_idx):
+        pc, labels = batch
+
+        logits = self.forward(pc)
+        loss = F.cross_entropy(logits, labels)
+        with torch.no_grad():
+            acc = (torch.argmax(logits, dim=1) == labels).float().mean()
+
+        log = dict(train_loss=loss, train_acc=acc)
+
+        return dict(loss=loss, log=log, progress_bar=dict(train_acc=acc))
+
+    def validation_step(self, batch, batch_idx):
+        pc, labels = batch
+
+        logits = self.forward(pc)
+        loss = F.cross_entropy(logits, labels)
+        acc = (torch.argmax(logits, dim=1) == labels).float().mean()
+
+        return dict(val_loss=loss, val_acc=acc)
+
+    def validation_end(self, outputs):
+        reduced_outputs = {}
+        for k in outputs[0]:
+            for o in outputs:
+                reduced_outputs[k] = reduced_outputs.get(k, []) + [o[k]]
+
+        for k in reduced_outputs:
+            reduced_outputs[k] = torch.stack(reduced_outputs[k]).mean()
+
+        reduced_outputs.update(
+            dict(log=reduced_outputs.copy(), progress_bar=reduced_outputs.copy())
+        )
+
+        return reduced_outputs
+
+    def configure_optimizers(self):
+        lr_lbmd = lambda _: max(
+            self.hparams.optimizer.lr_decay
+            ** (
+                int(
+                    self.global_step
+                    * self.hparams.batch_size
+                    / self.hparams.optimizer.decay_step
+                )
+            ),
+            lr_clip / self.hparams.optimizer.lr,
+        )
+        bn_lbmd = lambda _: max(
+            self.hparams.optimizer.bn_momentum
+            * self.hparams.optimizer.bnm_decay
+            ** (
+                int(
+                    self.global_step
+                    * self.hparams.batch_size
+                    / self.hparams.optimizer.decay_step
+                )
+            ),
+            bnm_clip,
+        )
+
+        optimizer = torch.optim.Adam(
+            self.parameters(),
+            lr=self.hparams.optimizer.lr,
+            weight_decay=self.hparams.optimizer.weight_decay,
+        )
+        lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lambda=lr_lbmd)
+        bnm_scheduler = BNMomentumScheduler(self, bn_lambda=bn_lbmd)
+
+        return [optimizer], [lr_scheduler, bnm_scheduler]
+
+    def _build_dataloader(self, mode="train"):
+        train_transforms = transforms.Compose(
+            [
+                d_utils.PointcloudToTensor(),
+                d_utils.PointcloudScale(),
+                d_utils.PointcloudRotate(),
+                d_utils.PointcloudRotatePerturbation(),
+                d_utils.PointcloudTranslate(),
+                d_utils.PointcloudJitter(),
+                d_utils.PointcloudRandomInputDropout(),
+            ]
+        )
+
+        dset = ModelNet40Cls(
+            self.hparams.num_points,
+            transforms=train_transforms if mode == "train" else None,
+            train=mode == "train",
+        )
+        return DataLoader(
+            dset,
+            batch_size=self.hparams.batch_size,
+            shuffle=mode == "train",
+            num_workers=4,
+            pin_memory=True,
+            drop_last=mode == "train",
+        )
+
+    @pl.data_loader
+    def train_dataloader(self):
+        return self._build_dataloader(mode="train")
+
+    @pl.data_loader
+    def val_dataloader(self):
+        return self._build_dataloader(mode="val")

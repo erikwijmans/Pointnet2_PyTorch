@@ -1,24 +1,37 @@
-from __future__ import (
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-)
+import os
+
+import hydra
+import hydra.experimental
+import numpy as np
 import pytest
 import torch
-import numpy as np
 
 pytest_plugins = ["helpers_namespace"]
 
+hydra.experimental.initialize(
+    os.path.join(os.path.dirname(__file__), "../pointnet2/config")
+)
 
-def _test_loop(model, model_fn, inputs, labels):
+
+@pytest.helpers.register
+def build_cfg(overrides=[]):
+    return hydra.experimental.compose("config.yaml", overrides)
+
+
+@pytest.helpers.register
+def get_model(overrides=[]):
+    cfg = build_cfg(overrides)
+    return hydra.utils.instantiate(cfg.task_model, cfg)
+
+
+def _test_loop(model, inputs, labels):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
     prev_loss = 1e10
     for _ in range(5):
         optimizer.zero_grad()
-        _, loss, _ = model_fn(model, (inputs, labels))
+        res = model.training_step((inputs, labels), None)
+        loss = res["loss"]
         loss.backward()
         optimizer.step()
 
@@ -28,40 +41,20 @@ def _test_loop(model, model_fn, inputs, labels):
 
 
 @pytest.helpers.register
-def cls_test_xyz(model, model_fn):
+def cls_test(model):
     B, N = 4, 2048
     inputs = torch.randn(B, N, 6).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
     model.cuda()
 
-    _test_loop(model, model_fn, inputs, labels)
+    _test_loop(model, inputs, labels)
 
 
 @pytest.helpers.register
-def cls_test_no_xyz(model, model_fn):
+def semseg_test(model):
     B, N = 4, 2048
-    inputs = torch.randn(B, N, 3).cuda()
-    labels = torch.from_numpy(np.random.randint(0, 3, size=B)).cuda()
-    model.cuda()
-
-    _test_loop(model, model_fn, inputs, labels)
-
-
-@pytest.helpers.register
-def semseg_test_xyz(model, model_fn):
-    B, N = 4, 2048
-    inputs = torch.randn(B, N, 6).cuda()
+    inputs = torch.randn(B, N, 9).cuda()
     labels = torch.from_numpy(np.random.randint(0, 3, size=B * N)).view(B, N).cuda()
     model.cuda()
 
-    _test_loop(model, model_fn, inputs, labels)
-
-
-@pytest.helpers.register
-def semseg_test_no_xyz(model, model_fn):
-    B, N = 4, 2048
-    inputs = torch.randn(B, N, 3).cuda()
-    labels = torch.from_numpy(np.random.randint(0, 3, size=B * N)).view(B, N).cuda()
-    model.cuda()
-
-    _test_loop(model, model_fn, inputs, labels)
+    _test_loop(model, inputs, labels)

@@ -2,7 +2,7 @@ numpy
 msgpack-numpy
 lmdb
 
-hydra-core
+hydra-core==0.11.3
 pytorch-lightning
 
 ./pointnet2_ops_lib/.

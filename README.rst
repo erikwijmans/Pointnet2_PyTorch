@@ -30,6 +30,8 @@ Setup
 
 
 
+
+
 Example training
 ----------------
 
@@ -69,13 +71,15 @@ Building only the CUDA kernels
 ----------------------------------
 
 
-  ::
+::
 
-    pip install pointnet2_ops_lib/.
+  pip install pointnet2_ops_lib/.
 
-    # Or if you would like to install them directly (this can also be used in a requirements.txt)
+  # Or if you would like to install them directly (this can also be used in a requirements.txt)
 
-    pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+  pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+
 
 
 

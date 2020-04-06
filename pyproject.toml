@@ -1,6 +1,6 @@
 [tool.isort]
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
-known_third_party = ["h5py", "hydra", "lmdb", "msgpack_numpy", "numpy", "pointnet2_ops", "pytest", "pytorch_lightning", "setuptools", "torch", "torchvision", "tqdm"]
+known_third_party = ["h5py", "hydra", "lmdb", "msgpack_numpy", "numpy", "omegaconf", "pointnet2_ops", "pytest", "pytorch_lightning", "setuptools", "torch", "torchvision", "tqdm"]
 multi_line_output = 3
 force_grid_wrap = false
 line_length = 88

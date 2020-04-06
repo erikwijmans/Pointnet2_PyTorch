@@ -19,7 +19,7 @@ def set_bn_momentum_default(bn_momentum):
     return fn
 
 
-class BNMomentumScheduler:
+class BNMomentumScheduler(lr_sched.LambdaLR):
     def __init__(self, model, bn_lambda, last_epoch=-1, setter=set_bn_momentum_default):
         if not isinstance(model, nn.Module):
             raise RuntimeError(
@@ -193,7 +193,7 @@ class PointNet2ClassificationSSG(pl.LightningModule):
 
         return [optimizer], [lr_scheduler, bnm_scheduler]
 
-    def _build_dataloader(self, mode="train"):
+    def prepare_data(self):
         train_transforms = transforms.Compose(
             [
                 d_utils.PointcloudToTensor(),
@@ -206,11 +206,14 @@ class PointNet2ClassificationSSG(pl.LightningModule):
             ]
         )
 
-        dset = ModelNet40Cls(
-            self.hparams.num_points,
-            transforms=train_transforms if mode == "train" else None,
-            train=mode == "train",
+        self.train_dset = ModelNet40Cls(
+            self.hparams.num_points, transforms=train_transforms, train=True
         )
+        self.val_dset = ModelNet40Cls(
+            self.hparams.num_points, transforms=None, train=False
+        )
+
+    def _build_dataloader(self, dset, mode):
         return DataLoader(
             dset,
             batch_size=self.hparams.batch_size,
@@ -220,10 +223,8 @@ class PointNet2ClassificationSSG(pl.LightningModule):
             drop_last=mode == "train",
         )
 
-    @pl.data_loader
     def train_dataloader(self):
-        return self._build_dataloader(mode="train")
+        return self._build_dataloader(self.train_dset, mode="train")
 
-    @pl.data_loader
     def val_dataloader(self):
-        return self._build_dataloader(mode="val")
+        return self._build_dataloader(self.val_dset, mode="val")

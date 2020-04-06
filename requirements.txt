@@ -3,6 +3,6 @@ msgpack-numpy
 lmdb
 
 hydra-core==0.11.3
-pytorch-lightning
+pytorch-lightning==0.7.1
 
 ./pointnet2_ops_lib/.

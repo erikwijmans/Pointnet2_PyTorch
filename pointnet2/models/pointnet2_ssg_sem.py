@@ -89,13 +89,6 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
 
         return self.fc_lyaer(l_features[0])
 
-    def _build_dataloader(self, mode="train"):
-        dset = Indoor3DSemSeg(self.hparams.num_points, train=mode == "train")
-        return DataLoader(
-            dset,
-            batch_size=self.hparams.batch_size,
-            shuffle=mode == "train",
-            num_workers=4,
-            pin_memory=True,
-            drop_last=mode == "train",
-        )
+    def prepare_data(self):
+        self.train_dset = Indoor3DSemSeg(self.hparams.num_points, train=True)
+        self.val_dset = Indoor3DSemSeg(self.hparams.num_points, train=False)

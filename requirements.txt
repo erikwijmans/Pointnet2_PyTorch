@@ -1,3 +1,4 @@
+torch==1.0
 numpy
 msgpack-numpy
 lmdb

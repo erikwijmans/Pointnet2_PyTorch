@@ -53,8 +53,6 @@ class FurthestPointSampling(Function):
         torch.Tensor
             (B, npoint) tensor containing the set
         """
-        ctx.save_for_backward(xyz)
-
         out = _ext.furthest_point_sampling(xyz, npoint)
 
         ctx.mark_non_differentiable(out)
@@ -63,9 +61,7 @@ class FurthestPointSampling(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
-        (xyz,) = ctx.saved_tensors
-
-        return torch.zeros_like(xyz), None
+        return ()
 
 
 furthest_point_sample = FurthestPointSampling.apply
@@ -91,15 +87,14 @@ class GatherOperation(Function):
             (B, C, npoint) tensor
         """
 
-        _, C, N = features.size()
-
-        ctx.save_for_backward(idx, C, N)
+        ctx.save_for_backward(idx, features)
 
         return _ext.gather_points(features, idx)
 
     @staticmethod
     def backward(ctx, grad_out):
-        idx, C, N = ctx.saved_tensors
+        idx, features = ctx.saved_tensors
+        N = features.size(2)
 
         grad_features = _ext.gather_points_grad(grad_out.contiguous(), idx, N)
         return grad_features, None
@@ -128,8 +123,6 @@ class ThreeNN(Function):
         idx : torch.Tensor
             (B, n, 3) index of 3 nearest neighbors
         """
-        ctx.save_for_backward(unknown, known)
-
         dist2, idx = _ext.three_nn(unknown, known)
         dist = torch.sqrt(dist)
 
@@ -139,8 +132,7 @@ class ThreeNN(Function):
 
     @staticmethod
     def backward(ctx, grad_dist, grad_idx):
-        unknown, known = ctx.saved_tensors
-        return torch.zeros_like(unknown), torch.zeros_like(known)
+        return ()
 
 
 three_nn = ThreeNN.apply
@@ -166,10 +158,7 @@ class ThreeInterpolate(Function):
         torch.Tensor
             (B, c, n) tensor of the interpolated features
         """
-        B, c, m = features.size()
-        n = idx.size(1)
-
-        ctx.save_for_backward(idx, weight, m)
+        ctx.save_for_backward(idx, weight, features)
 
         return _ext.three_interpolate(features, idx, weight)
 
@@ -191,7 +180,8 @@ class ThreeInterpolate(Function):
 
         None
         """
-        idx, weight, m = ctx.saved_tensors
+        idx, weight, features = ctx.saved_tensors
+        m = features.size(2)
 
         grad_features = _ext.three_interpolate_grad(
             grad_out.contiguous(), idx, weight, m
@@ -221,10 +211,7 @@ class GroupingOperation(Function):
         torch.Tensor
             (B, C, npoint, nsample) tensor
         """
-        B, nfeatures, nsample = idx.size()
-        _, C, N = features.size()
-
-        ctx.save_for_backward(idx, N)
+        ctx.save_for_backward(idx, features)
 
         return _ext.group_points(features, idx)
 
@@ -244,7 +231,8 @@ class GroupingOperation(Function):
             (B, C, N) gradient of the features
         None
         """
-        idx, N = ctx.saved_tensors
+        idx, features = ctx.saved_tensors
+        N = features.size(2)
 
         grad_features = _ext.group_points_grad(grad_out.contiguous(), idx, N)
 
@@ -276,8 +264,6 @@ class BallQuery(Function):
         torch.Tensor
             (B, npoint, nsample) tensor with the indicies of the features that form the query balls
         """
-        ctx.save_for_backward(new_xyz, xyz)
-
         output = _ext.ball_query(new_xyz, xyz, radius, nsample)
 
         ctx.mark_non_differentiable(output)
@@ -286,9 +272,7 @@ class BallQuery(Function):
 
     @staticmethod
     def backward(ctx, grad_out):
-        new_xyz, xyz = ctx.saved_tensors
-
-        return None, None, torch.zeros_like(xyz), torch.zeros_like(new_xyz)
+        return ()
 
 
 ball_query = BallQuery.apply

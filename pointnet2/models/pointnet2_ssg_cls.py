@@ -53,10 +53,10 @@ bnm_clip = 1e-2
 
 
 class PointNet2ClassificationSSG(pl.LightningModule):
-    def __init__(self, args):
+    def __init__(self, hparams):
         super().__init__()
 
-        self.hparams = args
+        self.hparams = hparams
 
         self._build_model()
 

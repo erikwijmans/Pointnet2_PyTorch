@@ -1,10 +1,8 @@
-import sys
-import warnings
-from typing import *
-
 import torch
 import torch.nn as nn
+import warnings
 from torch.autograd import Function
+from typing import *
 
 try:
     import pointnet2_ops._ext as _ext
@@ -124,7 +122,7 @@ class ThreeNN(Function):
             (B, n, 3) index of 3 nearest neighbors
         """
         dist2, idx = _ext.three_nn(unknown, known)
-        dist = torch.sqrt(dist)
+        dist = torch.sqrt(dist2)
 
         ctx.mark_non_differentiable(dist, idx)
 

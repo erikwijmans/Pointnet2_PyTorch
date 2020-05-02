@@ -122,11 +122,11 @@ class ThreeNN(Function):
             (B, n, 3) index of 3 nearest neighbors
         """
         dist2, idx = _ext.three_nn(unknown, known)
-        dist2 = torch.sqrt(dist2)
+        dist = torch.sqrt(dist2)
 
-        ctx.mark_non_differentiable(dist2, idx)
+        ctx.mark_non_differentiable(dist, idx)
 
-        return dist2, idx
+        return dist, idx
 
     @staticmethod
     def backward(ctx, grad_dist, grad_idx):

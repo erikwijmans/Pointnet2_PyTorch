@@ -138,7 +138,7 @@ class ModelNet40Cls(data.Dataset):
         return self._len
 
     def set_num_points(self, pts):
-        self.num_points = min(int(1e5), pts)
+        self.num_points = min(int(1e4), pts)
 
 
 if __name__ == "__main__":

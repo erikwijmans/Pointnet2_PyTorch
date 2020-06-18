@@ -68,7 +68,7 @@ class PointNet2ClassificationSSG(pl.LightningModule):
                 radius=0.2,
                 nsample=64,
                 mlp=[3, 64, 64, 128],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         self.SA_modules.append(
@@ -77,12 +77,12 @@ class PointNet2ClassificationSSG(pl.LightningModule):
                 radius=0.4,
                 nsample=64,
                 mlp=[128, 128, 128, 256],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         self.SA_modules.append(
             PointnetSAModule(
-                mlp=[256, 256, 512, 1024], use_xyz=self.hparams.model.use_xyz
+                mlp=[256, 256, 512, 1024], use_xyz=self.hparams["model.use_xyz"]
             )
         )
 
@@ -160,24 +160,24 @@ class PointNet2ClassificationSSG(pl.LightningModule):
 
     def configure_optimizers(self):
         lr_lbmd = lambda _: max(
-            self.hparams.optimizer.lr_decay
+            self.hparams["optimizer.lr_decay"]
             ** (
                 int(
                     self.global_step
-                    * self.hparams.batch_size
-                    / self.hparams.optimizer.decay_step
+                    * self.hparams["batch_size"]
+                    / self.hparams["optimizer.decay_step"]
                 )
             ),
-            lr_clip / self.hparams.optimizer.lr,
+            lr_clip / self.hparams["optimizer.lr"],
         )
         bn_lbmd = lambda _: max(
-            self.hparams.optimizer.bn_momentum
-            * self.hparams.optimizer.bnm_decay
+            self.hparams["optimizer.bn_momentum"]
+            * self.hparams["optimizer.bnm_decay"]
             ** (
                 int(
                     self.global_step
-                    * self.hparams.batch_size
-                    / self.hparams.optimizer.decay_step
+                    * self.hparams["batch_size"]
+                    / self.hparams["optimizer.decay_step"]
                 )
             ),
             bnm_clip,
@@ -185,8 +185,8 @@ class PointNet2ClassificationSSG(pl.LightningModule):
 
         optimizer = torch.optim.Adam(
             self.parameters(),
-            lr=self.hparams.optimizer.lr,
-            weight_decay=self.hparams.optimizer.weight_decay,
+            lr=self.hparams["optimizer.lr"],
+            weight_decay=self.hparams["optimizer.weight_decay"],
         )
         lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lambda=lr_lbmd)
         bnm_scheduler = BNMomentumScheduler(self, bn_lambda=bn_lbmd)
@@ -207,16 +207,16 @@ class PointNet2ClassificationSSG(pl.LightningModule):
         )
 
         self.train_dset = ModelNet40Cls(
-            self.hparams.num_points, transforms=train_transforms, train=True
+            self.hparams["num_points"], transforms=train_transforms, train=True
         )
         self.val_dset = ModelNet40Cls(
-            self.hparams.num_points, transforms=None, train=False
+            self.hparams["num_points"], transforms=None, train=False
         )
 
     def _build_dataloader(self, dset, mode):
         return DataLoader(
             dset,
-            batch_size=self.hparams.batch_size,
+            batch_size=self.hparams["batch_size"],
             shuffle=mode == "train",
             num_workers=4,
             pin_memory=True,

@@ -18,7 +18,7 @@ class PointNet2ClassificationMSG(PointNet2ClassificationSSG):
                 radii=[0.1, 0.2, 0.4],
                 nsamples=[16, 32, 128],
                 mlps=[[3, 32, 32, 64], [3, 64, 64, 128], [3, 64, 96, 128]],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
 
@@ -33,12 +33,12 @@ class PointNet2ClassificationMSG(PointNet2ClassificationSSG):
                     [input_channels, 128, 128, 256],
                     [input_channels, 128, 128, 256],
                 ],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         self.SA_modules.append(
             PointnetSAModule(
                 mlp=[128 + 256 + 256, 256, 512, 1024],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )

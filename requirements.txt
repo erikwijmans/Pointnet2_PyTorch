@@ -1,6 +1,7 @@
 numpy
 msgpack-numpy
 lmdb
+h5py
 
 hydra-core==0.11.3
 pytorch-lightning==0.7.1

@@ -18,7 +18,7 @@ class PointNet2SemSegMSG(PointNet2SemSegSSG):
                 radii=[0.05, 0.1],
                 nsamples=[16, 32],
                 mlps=[[c_in, 16, 16, 32], [c_in, 32, 32, 64]],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         c_out_0 = 32 + 64
@@ -30,7 +30,7 @@ class PointNet2SemSegMSG(PointNet2SemSegSSG):
                 radii=[0.1, 0.2],
                 nsamples=[16, 32],
                 mlps=[[c_in, 64, 64, 128], [c_in, 64, 96, 128]],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         c_out_1 = 128 + 128
@@ -42,7 +42,7 @@ class PointNet2SemSegMSG(PointNet2SemSegSSG):
                 radii=[0.2, 0.4],
                 nsamples=[16, 32],
                 mlps=[[c_in, 128, 196, 256], [c_in, 128, 196, 256]],
-                use_xyz=self.hparams.model.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         c_out_2 = 256 + 256
@@ -54,7 +54,7 @@ class PointNet2SemSegMSG(PointNet2SemSegSSG):
                 radii=[0.4, 0.8],
                 nsamples=[16, 32],
                 mlps=[[c_in, 256, 256, 512], [c_in, 256, 384, 512]],
-                use_xyz=self.hparams.use_xyz,
+                use_xyz=self.hparams["model.use_xyz"],
             )
         )
         c_out_3 = 512 + 512

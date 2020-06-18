@@ -16,7 +16,7 @@ def _get_data_files(list_filename):
 
 
 def _load_data_file(name):
-    f = h5py.File(name)
+    f = h5py.File(name, "r")
     data = f["data"][:]
     label = f["label"][:]
     return data, label

@@ -1,6 +1,9 @@
 Pointnet2/Pointnet++ PyTorch
 ============================
 
+
+**Project Status**: Unmaintained.  Due to finite time, I have no plans to update this code and I will not be responding to issues.
+
 * Implemention of Pointnet2/Pointnet++ written in `PyTorch <http://pytorch.org>`_.
 
 * Supports Multi-GPU via `nn.DataParallel <https://pytorch.org/docs/stable/nn.html#torch.nn.DataParallel>`_.

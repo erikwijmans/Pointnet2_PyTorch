@@ -54,7 +54,7 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
         self.FP_modules.append(PointnetFPModule(mlp=[256 + 128, 256, 256]))
         self.FP_modules.append(PointnetFPModule(mlp=[512 + 256, 256, 256]))
 
-        self.fc_lyaer = nn.Sequential(
+        self.fc_layer = nn.Sequential(
             nn.Conv1d(128, 128, kernel_size=1, bias=False),
             nn.BatchNorm1d(128),
             nn.ReLU(True),
@@ -87,7 +87,7 @@ class PointNet2SemSegSSG(PointNet2ClassificationSSG):
                 l_xyz[i - 1], l_xyz[i], l_features[i - 1], l_features[i]
             )
 
-        return self.fc_lyaer(l_features[0])
+        return self.fc_layer(l_features[0])
 
     def prepare_data(self):
         self.train_dset = Indoor3DSemSeg(self.hparams["num_points"], train=True)

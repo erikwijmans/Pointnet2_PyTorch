@@ -1,6 +1,7 @@
 Pointnet2/Pointnet++ PyTorch
 ============================
-
+*** Compilation problem solved with pytorch2.2.1 with CUDA12.1 on Ubuntu22.04
+*** If still have issue about ninja, install build-essential and ninja-build or refer https://blog.csdn.net/fq9200/article/details/125362088
 
 **Project Status**: Unmaintained.  Due to finite time, I have no plans to update this code and I will not be responding to issues.
 

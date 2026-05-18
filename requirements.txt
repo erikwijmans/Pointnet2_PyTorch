@@ -4,6 +4,6 @@ lmdb
 h5py
 
 hydra-core==0.11.3
-pytorch-lightning==0.7.1
+pytorch-lightning==2.6.1
 
 ./pointnet2_ops_lib/.
